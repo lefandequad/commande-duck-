@@ -1,0 +1,4213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duck Dev — Studio de Développement</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07060f;
+    --bg2: #0d0b1a;
+    --bg3: #120f22;
+    --surface: #1a1630;
+    --surface2: #221e3a;
+    --border: rgba(120,90,255,0.18);
+    --border2: rgba(120,90,255,0.08);
+    --violet: #7b5cfa;
+    --violet2: #9d7fff;
+    --blue: #3b82f6;
+    --blue2: #60a5fa;
+    --pink: #e040fb;
+    --text: #f0eeff;
+    --text2: #a89fcc;
+    --text3: #6b6090;
+    --glow: rgba(123,92,250,0.35);
+    --glow2: rgba(59,130,246,0.25);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE TEXTURE ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--violet); border-radius: 10px; }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 5%;
+    height: 70px;
+    background: rgba(7,6,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem;
+    color: var(--text); text-decoration: none;
+  }
+
+  .nav-logo .duck-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 0 16px var(--glow);
+  }
+
+  .nav-links {
+    display: flex; align-items: center; gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text2); text-decoration: none;
+    font-size: 0.9rem; font-weight: 500;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+
+  .nav-links a:hover { color: var(--violet2); }
+
+  .nav-cta {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 8px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 0 20px var(--glow);
+  }
+
+  .nav-cta:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* ─── CART BUTTON ─── */
+  .nav-cart-btn {
+    position: relative;
+    width: 42px; height: 42px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 0.5rem;
+  }
+  .nav-cart-btn:hover { border-color: var(--violet); background: rgba(123,92,250,0.1); }
+  .cart-badge {
+    position: absolute; top: -6px; right: -6px;
+    min-width: 18px; height: 18px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-radius: 100px;
+    font-size: 0.65rem; font-weight: 700;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 0 10px var(--glow);
+    opacity: 0; transform: scale(0);
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cart-badge.visible { opacity: 1; transform: scale(1); }
+
+  /* ─── CART PANEL ─── */
+  .cart-panel {
+    position: fixed;
+    top: 70px; right: 0;
+    width: 420px; max-width: 95vw;
+    height: calc(100vh - 70px);
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    z-index: 900;
+    display: flex; flex-direction: column;
+    transform: translateX(110%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+  }
+  .cart-panel.open { transform: translateX(0); }
+
+  .cart-panel-header {
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .cart-panel-header h3 {
+    font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cart-close-btn {
+    width: 32px; height: 32px;
+    background: var(--surface2); border: none; border-radius: 8px;
+    color: var(--text2); font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .cart-close-btn:hover { background: rgba(123,92,250,0.2); color: var(--violet2); }
+
+  .cart-items-list {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .cart-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 10px;
+    color: var(--text3); font-size: 0.9rem; text-align: center;
+  }
+  .cart-empty .cart-empty-icon { font-size: 3rem; }
+
+  .cart-item {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    animation: fadeUp 0.3s ease both;
+  }
+  .cart-item-info { flex: 1; }
+  .cart-item-name {
+    font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .cart-item-desc {
+    font-size: 0.75rem; color: var(--text2); margin-bottom: 6px; line-height: 1.4;
+  }
+  .cart-item-note {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    resize: none; height: 52px; outline: none;
+    transition: border-color 0.2s;
+    margin-top: 4px;
+  }
+  .cart-item-note:focus { border-color: var(--violet); }
+  .cart-item-remove {
+    background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 7px; padding: 5px 8px;
+    color: #f87171; font-size: 0.75rem; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+  }
+  .cart-item-remove:hover { background: rgba(248,113,113,0.2); }
+
+  .cart-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border2);
+    flex-shrink: 0;
+  }
+  .cart-user-fields { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .cart-user-fields input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .cart-user-fields input:focus { border-color: var(--violet); }
+  .cart-validate-btn {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 11px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: 0 4px 25px var(--glow);
+  }
+  .cart-validate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 35px var(--glow); }
+  .cart-validate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ─── ORDER DISCUSSION PAGE ─── */
+  .order-page {
+    position: fixed; inset: 0; z-index: 2000;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    transform: translateY(110%);
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .order-page.open { transform: translateY(0); }
+
+  .order-page-header {
+    height: 60px; flex-shrink: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 14px;
+  }
+  .order-back-btn {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 6px 12px;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+  }
+  .order-back-btn:hover { border-color: var(--violet); color: var(--violet2); }
+
+  .order-page-id {
+    font-family: monospace; font-size: 0.82rem; color: var(--text3);
+  }
+  .order-page-status-badge {
+    margin-left: auto;
+    padding: 5px 14px; border-radius: 100px;
+    font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; border: none;
+    transition: all 0.2s;
+  }
+
+  .order-page-body {
+    flex: 1; display: grid;
+    grid-template-columns: 320px 1fr;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL */
+  .order-left {
+    border-right: 1px solid var(--border2);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  .order-recap {
+    padding: 20px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .order-recap-title {
+    font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .order-service-item {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .order-service-item-name {
+    font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .order-service-item-note {
+    font-size: 0.75rem; color: var(--text2); line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* PROGRESS TRACKER */
+  .order-progress {
+    padding: 20px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .progress-title {
+    font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .progress-steps { display: flex; flex-direction: column; gap: 0; }
+  .progress-step {
+    display: flex; align-items: flex-start; gap: 12px;
+    position: relative;
+  }
+  .progress-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 13px; top: 28px;
+    width: 2px; height: calc(100% - 4px);
+    background: var(--border2);
+  }
+  .progress-step.done::after { background: var(--violet); }
+  .progress-step.active::after { background: linear-gradient(to bottom, var(--violet), var(--border2)); }
+
+  .step-dot {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700;
+    border: 2px solid var(--border2);
+    background: var(--bg2);
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+  .progress-step.done .step-dot {
+    background: var(--violet); border-color: var(--violet);
+    box-shadow: 0 0 12px var(--glow);
+  }
+  .progress-step.active .step-dot {
+    background: var(--bg2); border-color: var(--violet);
+    box-shadow: 0 0 12px var(--glow);
+    color: var(--violet);
+  }
+  .step-info { padding: 4px 0 20px; }
+  .step-label {
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--text2);
+  }
+  .progress-step.done .step-label,
+  .progress-step.active .step-label { color: var(--text); }
+  .step-date { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+
+  /* ADMIN CONTROLS */
+  .order-admin-panel {
+    padding: 16px 20px;
+    background: rgba(123,92,250,0.05);
+    border-top: 1px solid var(--border2);
+    margin-top: auto;
+  }
+  .admin-panel-title {
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--violet2);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .admin-status-btns {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .admin-status-btn {
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+  }
+
+  /* RIGHT PANEL - CHAT */
+  .order-chat {
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .order-chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .order-chat-title {
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+  }
+  .order-chat-sub { font-size: 0.75rem; color: var(--text3); margin-left: auto; }
+
+  .order-chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .system-msg {
+    text-align: center;
+    font-size: 0.75rem; color: var(--text3);
+    padding: 8px 16px;
+    background: var(--surface);
+    border-radius: 100px;
+    align-self: center;
+    border: 1px solid var(--border2);
+  }
+
+  .order-chat-input-row {
+    padding: 14px 18px;
+    border-top: 1px solid var(--border2);
+    display: flex; gap: 10px; flex-shrink: 0;
+  }
+  .order-chat-input-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 11px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .order-chat-input-row input:focus { border-color: var(--violet); }
+  .order-chat-send {
+    padding: 11px 18px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 16px var(--glow);
+  }
+  .order-chat-send:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* STATUS COLOR CLASSES */
+  .status-attente { background: rgba(251,191,36,0.12); color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+  .status-encours { background: rgba(59,130,246,0.12); color: var(--blue2); border-color: rgba(59,130,246,0.3); }
+  .status-evaluation { background: rgba(224,64,251,0.12); color: #e879f9; border-color: rgba(224,64,251,0.3); }
+  .status-fini { background: rgba(74,222,128,0.12); color: #4ade80; border-color: rgba(74,222,128,0.3); }
+  .status-annule { background: rgba(248,113,113,0.12); color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+  /* TOAST NOTIF */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 0.88rem; font-weight: 500;
+    color: var(--text);
+    z-index: 9998;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 5% 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .hero-orb-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(123,92,250,0.2) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+
+  .hero-orb-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+    bottom: -100px; right: -100px;
+    animation: orbFloat 10s ease-in-out infinite reverse;
+  }
+
+  .hero-orb-3 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(224,64,251,0.1) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    animation: orbFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes orbFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.05); }
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(123,92,250,0.12);
+    border: 1px solid rgba(123,92,250,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.8rem; font-weight: 500;
+    color: var(--violet2);
+    margin-bottom: 2rem;
+    animation: fadeDown 0.8s ease both;
+  }
+
+  .hero-badge .dot {
+    width: 7px; height: 7px;
+    background: #4ade80;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #4ade80;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    animation: fadeDown 0.8s 0.1s ease both;
+  }
+
+  .hero-title .gradient-text {
+    background: linear-gradient(135deg, var(--violet2) 0%, var(--blue2) 50%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    max-width: 580px;
+    color: var(--text2);
+    font-size: 1.1rem;
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+    animation: fadeDown 0.8s 0.2s ease both;
+  }
+
+  .hero-btns {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    animation: fadeDown 0.8s 0.3s ease both;
+  }
+
+  .btn-primary {
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 12px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: 0 4px 30px var(--glow);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 40px var(--glow);
+  }
+
+  .btn-secondary {
+    padding: 14px 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: all 0.25s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--violet);
+    color: var(--violet2);
+    background: rgba(123,92,250,0.06);
+    transform: translateY(-3px);
+  }
+
+  /* ─── STATS ─── */
+  #stats {
+    padding: 60px 5%;
+    display: flex; justify-content: center; gap: 0;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border2);
+    border-bottom: 1px solid var(--border2);
+    background: var(--bg2);
+  }
+
+  .stat-item {
+    flex: 1; min-width: 200px;
+    text-align: center;
+    padding: 20px 40px;
+    border-right: 1px solid var(--border2);
+    position: relative;
+  }
+
+  .stat-item:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.8rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--violet2), var(--blue2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text3);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── SECTIONS COMMON ─── */
+  section { padding: 100px 5%; }
+
+  .section-tag {
+    display: inline-block;
+    font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--violet2);
+    background: rgba(123,92,250,0.1);
+    border: 1px solid rgba(123,92,250,0.2);
+    border-radius: 100px;
+    padding: 4px 14px;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-sub {
+    color: var(--text2);
+    font-size: 1rem;
+    font-weight: 300;
+    max-width: 540px;
+  }
+
+  .section-header { margin-bottom: 3.5rem; }
+
+  /* ─── SERVICES / CATALOGUE ─── */
+  #services { background: var(--bg2); }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .service-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 18px;
+    padding: 32px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(123,92,250,0.06), transparent);
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .service-card:hover {
+    border-color: rgba(123,92,250,0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(123,92,250,0.15);
+  }
+
+  .service-card:hover::before { opacity: 1; }
+
+  .card-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    border-radius: 100px;
+    padding: 3px 10px;
+    margin-bottom: 0.8rem;
+  }
+
+  .tag-free { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+  .tag-paid { background: rgba(123,92,250,0.12); color: var(--violet2); border: 1px solid rgba(123,92,250,0.2); }
+  .tag-devis { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem; font-weight: 700;
+    margin-bottom: 0.6rem;
+  }
+
+  .card-desc {
+    font-size: 0.88rem;
+    color: var(--text2);
+    font-weight: 300;
+    margin-bottom: 1.2rem;
+    line-height: 1.6;
+  }
+
+  .card-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem; font-weight: 800;
+    color: var(--violet2);
+  }
+
+  .card-price span {
+    font-size: 0.8rem; font-weight: 400;
+    color: var(--text3);
+  }
+
+  .card-features {
+    list-style: none;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .card-features li {
+    font-size: 0.82rem;
+    color: var(--text2);
+    padding: 3px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .card-features li::before {
+    content: '✦';
+    color: var(--violet);
+    font-size: 0.6rem;
+  }
+
+  .card-btn {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px var(--glow);
+  }
+
+  .card-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* ─── TICKETS ─── */
+  #tickets { background: var(--bg); }
+
+  .tickets-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .ticket-form-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+  }
+
+  .ticket-form-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem; font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .ticket-form-title .icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem;
+  }
+
+  .form-group { margin-bottom: 1.2rem; }
+
+  .form-group label {
+    display: block;
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(123,92,250,0.12);
+  }
+
+  .form-group select option { background: var(--bg2); }
+  .form-group textarea { resize: vertical; min-height: 100px; }
+
+  .priority-row {
+    display: flex; gap: 0.7rem;
+  }
+
+  .priority-btn {
+    flex: 1; padding: 8px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .priority-btn.active-low { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
+  .priority-btn.active-med { background: rgba(251,191,36,0.12); border-color: #fbbf24; color: #fbbf24; }
+  .priority-btn.active-high { background: rgba(248,113,113,0.12); border-color: #f87171; color: #f87171; }
+
+  .form-submit {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 12px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: all 0.25s;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 25px var(--glow);
+  }
+
+  .form-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 35px var(--glow); }
+
+  /* ─── TICKET CHAT VIEW ─── */
+  .ticket-chat-wrap {
+    display: flex; flex-direction: column; gap: 1.5rem;
+  }
+
+  .chat-info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .chat-info-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--violet2);
+  }
+
+  .chat-steps { list-style: none; }
+
+  .chat-steps li {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border2);
+    font-size: 0.88rem;
+    color: var(--text2);
+  }
+
+  .chat-steps li:last-child { border-bottom: none; }
+
+  .step-num {
+    min-width: 26px; height: 26px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700;
+    color: #fff;
+  }
+
+  /* ─── LIVE CHAT DEMO ─── */
+  .chat-demo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .chat-demo-header {
+    padding: 14px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .chat-demo-header .status-dot {
+    width: 8px; height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #4ade80;
+    animation: pulse 2s infinite;
+  }
+
+  .chat-demo-header .ticket-id {
+    font-size: 0.82rem; color: var(--text2); font-family: monospace;
+  }
+
+  .chat-demo-header .ticket-status {
+    margin-left: auto;
+    font-size: 0.72rem; font-weight: 600;
+    background: rgba(74,222,128,0.12);
+    border: 1px solid rgba(74,222,128,0.25);
+    color: #4ade80;
+    padding: 3px 10px; border-radius: 100px;
+  }
+
+  .chat-messages {
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 200px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .msg {
+    max-width: 85%;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .msg-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--violet), #6040e0);
+    color: #fff;
+    border-radius: 14px 14px 4px 14px;
+    padding: 10px 14px;
+  }
+
+  .msg-admin {
+    align-self: flex-start;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: 14px 14px 14px 4px;
+    padding: 10px 14px;
+  }
+
+  .msg-meta {
+    font-size: 0.7rem;
+    color: var(--text3);
+    margin-top: 3px;
+    text-align: right;
+  }
+
+  .msg-meta-left { text-align: left; }
+
+  .chat-input-row {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border2);
+    display: flex; gap: 10px;
+  }
+
+  .chat-input-row input {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input-row input:focus { border-color: var(--violet); }
+
+  .chat-send-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 10px;
+    color: #fff; cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  .chat-send-btn:hover { opacity: 0.85; transform: scale(1.05); }
+
+  /* ─── CONTACT SIMPLE ─── */
+  #contact { background: var(--bg2); }
+
+  .contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .contact-info { display: flex; flex-direction: column; gap: 1.2rem; }
+
+  .contact-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex; align-items: center; gap: 14px;
+    transition: all 0.2s;
+  }
+
+  .contact-card:hover {
+    border-color: rgba(123,92,250,0.3);
+    transform: translateX(4px);
+  }
+
+  .contact-card-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .contact-card-text strong {
+    display: block;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .contact-card-text span {
+    font-size: 0.82rem;
+    color: var(--text2);
+  }
+
+  .contact-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+  }
+
+  .contact-form-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem; font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* ─── FAQ ─── */
+  #faq { background: var(--bg); }
+
+  .faq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .faq-item:hover { border-color: rgba(123,92,250,0.3); }
+
+  .faq-question {
+    width: 100%;
+    padding: 18px 22px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem; font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    transition: color 0.2s;
+  }
+
+  .faq-question:hover { color: var(--violet2); }
+
+  .faq-arrow {
+    flex-shrink: 0;
+    transition: transform 0.3s;
+    color: var(--violet);
+    font-size: 0.75rem;
+  }
+
+  .faq-item.open .faq-arrow { transform: rotate(180deg); }
+
+  .faq-answer {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.3s;
+    font-size: 0.85rem;
+    color: var(--text2);
+    line-height: 1.7;
+    padding: 0 22px;
+  }
+
+  .faq-item.open .faq-answer {
+    max-height: 200px;
+    padding: 0 22px 18px;
+  }
+
+  /* ─── ABOUT ─── */
+  #about { background: var(--bg2); }
+
+  .about-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .about-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .about-card-main {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 36px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .about-duck {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 1rem;
+    animation: duckBob 2s ease-in-out infinite;
+  }
+
+  @keyframes duckBob {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-10px) rotate(3deg); }
+  }
+
+  .about-card-main h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem; font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .about-card-main p {
+    font-size: 0.85rem;
+    color: var(--text2);
+  }
+
+  .about-badge-wrap {
+    position: absolute;
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+
+  .about-mini-badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    color: var(--text2);
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .about-badges-left { left: -80px; top: 20%; }
+  .about-badges-right { right: -80px; top: 50%; }
+
+  .about-text h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .about-text p {
+    color: var(--text2);
+    font-size: 0.95rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    line-height: 1.8;
+  }
+
+  .about-skills {
+    display: flex; flex-wrap: wrap; gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+
+  .skill-pill {
+    background: rgba(123,92,250,0.1);
+    border: 1px solid rgba(123,92,250,0.2);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    color: var(--violet2);
+  }
+
+  /* ─── TICKET SUCCESS MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 44px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s;
+  }
+
+  .modal-overlay.visible .modal-box { transform: scale(1) translateY(0); }
+
+  .modal-icon { font-size: 3.5rem; margin-bottom: 1.2rem; display: block; }
+
+  .modal-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem; font-weight: 800;
+    margin-bottom: 0.8rem;
+  }
+
+  .modal-box p {
+    color: var(--text2);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+  }
+
+  .modal-link-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--violet2);
+    word-break: break-all;
+    margin-bottom: 1.5rem;
+    text-align: left;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+
+  .modal-copy-btn {
+    background: var(--violet);
+    border: none; border-radius: 7px;
+    padding: 5px 10px;
+    color: #fff; font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .modal-close {
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .modal-close:hover { opacity: 0.85; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--border2);
+    padding: 60px 5% 30px;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+
+  .footer-brand p {
+    font-size: 0.88rem;
+    color: var(--text3);
+    font-weight: 300;
+    margin-top: 1rem;
+    max-width: 260px;
+    line-height: 1.7;
+  }
+
+  .footer-discord-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 1.2rem;
+    padding: 9px 18px;
+    background: rgba(88,101,242,0.15);
+    border: 1px solid rgba(88,101,242,0.3);
+    border-radius: 10px;
+    color: #7289da;
+    font-size: 0.85rem; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .footer-discord-btn:hover {
+    background: rgba(88,101,242,0.25);
+    transform: translateY(-2px);
+  }
+
+  .footer-col h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .footer-col ul { list-style: none; }
+
+  .footer-col ul li { margin-bottom: 0.6rem; }
+
+  .footer-col ul li a {
+    font-size: 0.85rem;
+    color: var(--text3);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .footer-col ul li a:hover { color: var(--violet2); }
+
+  .footer-bottom {
+    border-top: 1px solid var(--border2);
+    padding-top: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+
+  .footer-bottom p {
+    font-size: 0.8rem;
+    color: var(--text3);
+  }
+
+  .footer-bottom a { color: var(--violet2); text-decoration: none; }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── FILTER BUTTONS ─── */
+  .filter-btn {
+    padding: 8px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover {
+    border-color: rgba(123,92,250,0.3);
+    color: var(--violet2);
+  }
+
+  .filter-btn.active {
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 16px var(--glow);
+  }
+
+  .service-card[data-cat] {
+    transition: all 0.3s, opacity 0.3s, transform 0.3s;
+  }
+
+  .service-card.hidden {
+    display: none;
+  }
+
+  /* ─── PRICING LEGEND ─── */
+  .pricing-legend {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    align-items: center;
+  }
+
+  .pricing-legend span { font-size: 0.8rem; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+
+  /* ─── MAINTENANCE BANNER ─── */
+  .maintenance-banner {
+    display: none;
+    position: fixed; top: 70px; left: 0; right: 0; z-index: 990;
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+    color: #000; font-weight: 600; font-size: 0.85rem;
+    text-align: center; padding: 10px 20px;
+    box-shadow: 0 4px 20px rgba(245,158,11,0.4);
+    animation: slideDown 0.4s ease both;
+  }
+  .maintenance-banner.visible { display: block; }
+  @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+  /* ─── ADMIN LOGIN OVERLAY ─── */
+  .admin-login-overlay {
+    position: fixed; inset: 0; z-index: 8000;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .admin-login-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .admin-login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 44px;
+    width: 380px; max-width: 92vw;
+    text-align: center;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+  .admin-login-overlay.visible .admin-login-box { transform: scale(1) translateY(0); }
+
+  .admin-login-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+  .admin-login-box h2 { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; margin-bottom:0.4rem; }
+  .admin-login-box p { color:var(--text2); font-size:0.85rem; margin-bottom:1.5rem; }
+
+  .admin-pin-input {
+    width: 100%; background: var(--bg2);
+    border: 1px solid var(--border2); border-radius: 12px;
+    padding: 14px 18px; color: var(--text);
+    font-family: 'Syne', sans-serif; font-size: 1.4rem;
+    font-weight: 700; letter-spacing: 0.3em;
+    text-align: center; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 1rem;
+  }
+  .admin-pin-input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px rgba(123,92,250,0.15); }
+  .admin-pin-input.error { border-color: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.15); animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+  .admin-login-btn {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 11px;
+    color: #fff; font-family:'DM Sans',sans-serif;
+    font-size:0.95rem; font-weight:600; cursor:pointer;
+    transition: all 0.2s; margin-bottom:0.8rem;
+    box-shadow: 0 4px 20px var(--glow);
+  }
+  .admin-login-btn:hover { transform:translateY(-2px); }
+  .admin-login-cancel { font-size:0.82rem; color:var(--text3); cursor:pointer; transition:color 0.2s; background:none; border:none; }
+  .admin-login-cancel:hover { color:var(--text2); }
+
+  /* ─── ADMIN PANEL (FULL PAGE) ─── */
+  .admin-panel-page {
+    position: fixed; inset: 0; z-index: 7000;
+    background: var(--bg);
+    transform: translateX(-110%);
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .admin-panel-page.open { transform: translateX(0); }
+
+  /* Admin topbar */
+  .admin-topbar {
+    height: 58px; flex-shrink: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border2);
+    display: flex; align-items: center; padding: 0 20px; gap: 14px;
+  }
+  .admin-topbar-logo {
+    font-family:'Syne',sans-serif; font-weight:800; font-size:1rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .admin-role-badge {
+    padding: 3px 12px; border-radius:100px;
+    font-size:0.72rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.1em;
+  }
+  .badge-fondation { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#000; }
+  .badge-moderateur { background:linear-gradient(135deg,var(--violet),var(--blue)); color:#fff; }
+
+  .admin-topbar-close {
+    margin-left:auto;
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:8px; padding:6px 14px;
+    color:var(--text2); font-family:'DM Sans',sans-serif;
+    font-size:0.82rem; cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .admin-topbar-close:hover { border-color:var(--violet); color:var(--violet2); }
+
+  /* Admin body layout */
+  .admin-body {
+    flex:1; display:flex; overflow:hidden;
+  }
+
+  /* Admin sidebar */
+  .admin-sidebar {
+    width: 220px; flex-shrink:0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border2);
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex; flex-direction:column; gap:4px;
+  }
+  .admin-sidebar-section {
+    font-size:0.68rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.12em; color:var(--text3);
+    padding: 10px 10px 4px; margin-top:6px;
+  }
+  .admin-nav-btn {
+    width:100%; padding:9px 12px;
+    background:transparent; border:none; border-radius:9px;
+    color:var(--text2); font-family:'DM Sans',sans-serif;
+    font-size:0.85rem; font-weight:500; text-align:left;
+    cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; gap:8px;
+  }
+  .admin-nav-btn:hover { background:var(--surface); color:var(--text); }
+  .admin-nav-btn.active { background:rgba(123,92,250,0.15); color:var(--violet2); border:1px solid rgba(123,92,250,0.2); }
+
+  /* Admin content */
+  .admin-content {
+    flex:1; overflow-y:auto; padding:24px;
+  }
+
+  .admin-tab { display:none; }
+  .admin-tab.active { display:block; }
+
+  /* Admin section header */
+  .admin-section-head {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;
+  }
+  .admin-section-head h2 {
+    font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800;
+  }
+
+  /* Stat cards */
+  .admin-stats-row {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:1rem; margin-bottom:2rem;
+  }
+  .admin-stat-card {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:14px; padding:18px 20px;
+    transition:all 0.2s;
+  }
+  .admin-stat-card:hover { border-color:rgba(123,92,250,0.3); transform:translateY(-2px); }
+  .admin-stat-num {
+    font-family:'Syne',sans-serif; font-size:2rem; font-weight:800;
+    background:linear-gradient(135deg,var(--violet2),var(--blue2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .admin-stat-lbl { font-size:0.78rem; color:var(--text3); margin-top:2px; }
+
+  /* Orders table */
+  .admin-table {
+    width:100%; border-collapse:collapse;
+    background:var(--surface); border-radius:14px; overflow:hidden;
+    border:1px solid var(--border2);
+  }
+  .admin-table th {
+    background:var(--surface2); padding:12px 16px;
+    font-family:'Syne',sans-serif; font-size:0.75rem;
+    font-weight:700; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--text3); text-align:left;
+  }
+  .admin-table td {
+    padding:12px 16px; border-top:1px solid var(--border2);
+    font-size:0.85rem; color:var(--text2);
+    vertical-align:middle;
+  }
+  .admin-table tr:hover td { background:rgba(123,92,250,0.04); color:var(--text); }
+
+  .tbl-badge {
+    padding:3px 10px; border-radius:100px;
+    font-size:0.7rem; font-weight:700;
+  }
+
+  .admin-action-btn {
+    padding:5px 12px; border-radius:7px;
+    font-family:'DM Sans',sans-serif; font-size:0.75rem; font-weight:600;
+    cursor:pointer; transition:all 0.2s; border:1px solid;
+    margin-right:4px;
+  }
+
+  /* Settings forms */
+  .settings-card {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:16px; padding:24px; margin-bottom:1.5rem;
+  }
+  .settings-card-title {
+    font-family:'Syne',sans-serif; font-size:1rem; font-weight:700;
+    margin-bottom:1.2rem; display:flex; align-items:center; gap:8px;
+  }
+  .settings-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 0; border-bottom:1px solid var(--border2);
+    gap:1rem; flex-wrap:wrap;
+  }
+  .settings-row:last-child { border-bottom:none; padding-bottom:0; }
+  .settings-row-label { font-size:0.88rem; }
+  .settings-row-sub { font-size:0.75rem; color:var(--text3); margin-top:2px; }
+
+  /* Toggle switch */
+  .toggle-wrap { display:flex; align-items:center; gap:8px; }
+  .toggle {
+    position:relative; width:44px; height:24px;
+    background:var(--surface2); border-radius:100px;
+    cursor:pointer; transition:background 0.3s; flex-shrink:0;
+    border:1px solid var(--border2);
+  }
+  .toggle.on { background:linear-gradient(135deg,var(--violet),var(--blue)); border-color:transparent; }
+  .toggle::after {
+    content:''; position:absolute;
+    width:18px; height:18px; border-radius:50%;
+    background:#fff; top:2px; left:2px;
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  .toggle.on::after { transform:translateX(20px); }
+
+  /* Color picker row */
+  .color-grid { display:flex; gap:8px; flex-wrap:wrap; margin-top:0.5rem; }
+  .color-swatch {
+    width:28px; height:28px; border-radius:8px;
+    cursor:pointer; transition:transform 0.2s;
+    border:2px solid transparent;
+  }
+  .color-swatch:hover { transform:scale(1.15); }
+  .color-swatch.selected { border-color:#fff; transform:scale(1.15); }
+
+  /* Admin input */
+  .admin-input {
+    background:var(--bg2); border:1px solid var(--border2);
+    border-radius:9px; padding:9px 14px;
+    color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:0.85rem; outline:none; width:100%;
+    transition:border-color 0.2s;
+  }
+  .admin-input:focus { border-color:var(--violet); }
+  .admin-textarea {
+    background:var(--bg2); border:1px solid var(--border2);
+    border-radius:9px; padding:10px 14px;
+    color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:0.85rem; outline:none; width:100%;
+    resize:vertical; min-height:80px;
+    transition:border-color 0.2s;
+  }
+  .admin-textarea:focus { border-color:var(--violet); }
+
+  .admin-save-btn {
+    padding:10px 22px;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    border:none; border-radius:9px;
+    color:#fff; font-family:'DM Sans',sans-serif;
+    font-size:0.88rem; font-weight:600;
+    cursor:pointer; transition:all 0.2s;
+    box-shadow:0 4px 16px var(--glow);
+    margin-top:1rem;
+  }
+  .admin-save-btn:hover { transform:translateY(-1px); }
+
+  /* Chat in admin */
+  .admin-chat-layout {
+    display:grid; grid-template-columns:280px 1fr;
+    gap:1rem; height:calc(100vh - 180px);
+  }
+  .admin-chat-list {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:14px; overflow-y:auto;
+  }
+  .admin-chat-list-head {
+    padding:14px 16px; border-bottom:1px solid var(--border2);
+    font-family:'Syne',sans-serif; font-size:0.88rem; font-weight:700;
+  }
+  .admin-conv-item {
+    padding:12px 16px; border-bottom:1px solid var(--border2);
+    cursor:pointer; transition:background 0.2s;
+  }
+  .admin-conv-item:hover, .admin-conv-item.active { background:rgba(123,92,250,0.08); }
+  .admin-conv-name { font-size:0.88rem; font-weight:600; margin-bottom:2px; }
+  .admin-conv-preview { font-size:0.75rem; color:var(--text3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .admin-conv-meta { font-size:0.68rem; color:var(--text3); margin-top:2px; }
+  .unread-dot { display:inline-block; width:7px; height:7px; background:var(--violet); border-radius:50%; margin-left:5px; }
+
+  .admin-chat-view {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:14px; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .admin-chat-view-head {
+    padding:14px 18px; border-bottom:1px solid var(--border2);
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  .admin-chat-view-title { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; }
+  .admin-chat-view-msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .admin-chat-view-input { padding:12px 16px; border-top:1px solid var(--border2); display:flex; gap:8px; flex-shrink:0; }
+  .admin-chat-view-input input {
+    flex:1; background:var(--bg2); border:1px solid var(--border2);
+    border-radius:9px; padding:9px 14px; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:0.85rem; outline:none;
+    transition:border-color 0.2s;
+  }
+  .admin-chat-view-input input:focus { border-color:var(--violet); }
+  .admin-chat-send-btn {
+    padding:9px 16px; background:linear-gradient(135deg,var(--violet),var(--blue));
+    border:none; border-radius:9px; color:#fff;
+    font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:600;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .admin-chat-send-btn:hover { opacity:0.85; }
+
+  /* Moderator orders */
+  .order-detail-card {
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:14px; padding:18px 20px; margin-bottom:1rem;
+  }
+  .order-detail-head {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px; flex-wrap:wrap; gap:8px;
+  }
+  .order-detail-id { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; }
+
+  /* ─── DISCORD AUTH ─── */
+  .discord-login-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 11px 22px;
+    background: #5865F2;
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(88,101,242,0.4);
+    width: 100%;
+    justify-content: center;
+  }
+  .discord-login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .discord-login-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .nav-user-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px 5px 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.82rem; font-weight: 600;
+    cursor: default;
+    transition: all 0.2s;
+  }
+  .nav-user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--violet);
+  }
+  .nav-user-avatar-placeholder {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .nav-logout-btn {
+    background: none; border: none;
+    color: var(--text3); font-size: 0.75rem;
+    cursor: pointer; padding: 2px 6px;
+    border-radius: 6px; transition: all 0.2s;
+  }
+  .nav-logout-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+  .admin-discord-info {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    background: rgba(88,101,242,0.1);
+    border: 1px solid rgba(88,101,242,0.25);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    font-size: 0.82rem; color: var(--text2);
+  }
+  .admin-discord-info strong { color: var(--text); }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 768px) {
+    .tickets-layout, .contact-layout, .about-layout, .footer-top {
+      grid-template-columns: 1fr;
+    }
+    .faq-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border2); }
+    .about-badges-left, .about-badges-right { display: none; }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+    nav .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="nav-logo" href="#hero">
+    <div class="duck-icon">🦆</div>
+    Duck Dev
+  </a>
+  <ul class="nav-links">
+    <li><a onclick="scrollTo('services')">Services</a></li>
+    <li><a onclick="scrollTo('tickets')">Tickets</a></li>
+    <li><a onclick="scrollTo('about')">À propos</a></li>
+    <li><a onclick="scrollTo('faq')">FAQ</a></li>
+    <li><a onclick="scrollTo('contact')">Contact</a></li>
+  </ul>
+
+  <!-- Zone utilisateur Discord -->
+  <div id="nav-user-zone" style="display:flex;align-items:center;gap:0.5rem">
+    <!-- Non connecté -->
+    <div id="nav-guest">
+      <button class="discord-login-btn" style="padding:6px 14px;font-size:0.8rem;width:auto" onclick="loginWithDiscord()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+        Connexion Discord
+      </button>
+    </div>
+    <!-- Connecté -->
+    <div id="nav-logged" style="display:none">
+      <div class="nav-user-badge">
+        <div class="nav-user-avatar-placeholder" id="nav-avatar-placeholder">?</div>
+        <img id="nav-avatar-img" class="nav-user-avatar" style="display:none" alt="avatar">
+        <span id="nav-username">—</span>
+        <button class="nav-logout-btn" onclick="logoutDiscord()" title="Déconnexion">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="nav-cart-btn" onclick="toggleCart()" title="Panier">
+    🛒
+    <span class="cart-badge" id="cart-badge">0</span>
+  </button>
+  <button class="nav-cart-btn" onclick="openAdminLogin('fondation')" title="Panel Fondation" style="font-size:0.8rem;width:auto;padding:0 12px;gap:5px">
+    👑 <span style="font-size:0.75rem;font-weight:600">Admin</span>
+  </button>
+  <button class="nav-cart-btn" onclick="openAdminLogin('moderateur')" title="Panel Modérateur" style="font-size:0.8rem;width:auto;padding:0 12px;gap:5px">
+    🛡️ <span style="font-size:0.75rem;font-weight:600">Modo</span>
+  </button>
+  <button class="nav-cta" onclick="scrollTo('services')">Commander →</button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Disponible — Répond en moins de 2h
+  </div>
+
+  <h1 class="hero-title">
+    Ton studio dev<br>
+    <span class="gradient-text">sans compromis</span>
+  </h1>
+
+  <p class="hero-sub">
+    Bots Discord sur mesure, sites web, hébergement & design. Duck Dev conçoit des solutions digitales qui claquent, livrées vite et bien faites.
+  </p>
+
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="scrollTo('services')">Voir les offres</button>
+    <button class="btn-secondary" onclick="scrollTo('tickets')">Ouvrir un ticket</button>
+  </div>
+</section>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="120">0</span>
+    <span class="stat-label">Projets réalisés</span>
+  </div>
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="98">0</span>
+    <span class="stat-label">Clients satisfaits</span>
+  </div>
+  <div class="stat-item reveal">
+    <span class="stat-num" data-target="2">0</span>
+    <span class="stat-label">Temps de réponse moyen (h)</span>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-header reveal">
+    <span class="section-tag">Catalogue</span>
+    <h2 class="section-title">Nos offres & tarifs</h2>
+    <p class="section-sub">Des services de qualité à des prix transparents. Pas de surprise, pas de frais cachés.</p>
+  </div>
+
+  <div class="pricing-legend reveal">
+    <span><span class="card-tag tag-free" style="margin:0">Gratuit</span> Service entièrement offert</span>
+    <span><span class="card-tag tag-paid" style="margin:0">Payant</span> Prix fixe ou à partir de X€</span>
+    <span><span class="card-tag tag-devis" style="margin:0">Sur devis</span> Estimation gratuite selon tes besoins</span>
+  </div>
+
+  <!-- Category tabs -->
+  <div style="display:flex;gap:0.7rem;flex-wrap:wrap;margin-bottom:2rem">
+    <button class="filter-btn active" onclick="filterCards('all', this)">Tout voir</button>
+    <button class="filter-btn" onclick="filterCards('discord', this)">🤖 Bots Discord</button>
+    <button class="filter-btn" onclick="filterCards('web', this)">🌐 Sites Web</button>
+    <button class="filter-btn" onclick="filterCards('server', this)">🖥️ Serveurs</button>
+    <button class="filter-btn" onclick="filterCards('design', this)">🎨 Design</button>
+  </div>
+
+  <div class="services-grid">
+
+    <!-- Bot Custom -->
+    <div class="service-card reveal" data-cat="discord">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(123,92,250,0.15),rgba(59,130,246,0.15))">🤖</div>
+      <span class="card-tag tag-paid">Payant</span>
+      <div class="card-title">Bot Discord Custom</div>
+      <div class="card-desc">Un bot 100% pensé pour ton serveur — modération, systèmes de jeu, économie, tickets, logs, et tout ce que tu imagines. Le prix varie selon la complexité des fonctionnalités.</div>
+      <ul class="card-features">
+        <li>Fonctionnalités 100% sur mesure</li>
+        <li>Hébergement 24/7 inclus</li>
+        <li>Mises à jour & support inclus</li>
+        <li>Prix selon complexité du projet</li>
+      </ul>
+      <div class="card-price">À partir de 10€ <span>/ hébergement inclus</span></div>
+      <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text3)">💡 Plus le bot est complexe, plus le prix augmente. Devis gratuit.</div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Bot Discord Custom')">Demander un devis</button>
+    </div>
+
+    <!-- Site vitrine -->
+    <div class="service-card reveal" data-cat="web">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(74,222,128,0.12),rgba(59,130,246,0.12))">🌐</div>
+      <span class="card-tag tag-free">Gratuit</span>
+      <div class="card-title">Site Vitrine</div>
+      <div class="card-desc">Un site professionnel pour présenter ton projet, serveur Discord ou marque. Design moderne, responsive et optimisé. Tous types de sites vitrine acceptés.</div>
+      <ul class="card-features">
+        <li>Design unique & personnalisé</li>
+        <li>Responsive mobile/tablette</li>
+        <li>Livraison rapide</li>
+        <li>100% gratuit sans IA</li>
+      </ul>
+      <div class="card-price">Gratuit <span>/ sans intégration IA</span></div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Site Vitrine')">Commander ce service</button>
+    </div>
+
+    <!-- Site avec IA -->
+    <div class="service-card reveal" data-cat="web">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(224,64,251,0.12),rgba(123,92,250,0.12))">🧠</div>
+      <span class="card-tag tag-paid">Payant</span>
+      <div class="card-title">Site Web + IA intégrée</div>
+      <div class="card-desc">Tout type de site web avec intégration d'intelligence artificielle : chatbot IA, recommandations, génération de contenu, analyse de données et bien plus.</div>
+      <ul class="card-features">
+        <li>Chatbot IA personnalisé</li>
+        <li>Intégration API OpenAI / Claude</li>
+        <li>Tous types de sites (vitrine, app, e-commerce...)</li>
+        <li>Devis selon complexité</li>
+      </ul>
+      <div class="card-price">Sur devis <span>/ selon intégration</span></div>
+      <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text3)">💡 Site de base gratuit + supplément pour la partie IA uniquement.</div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Site Web + IA intégrée')">Demander un devis</button>
+    </div>
+
+    <!-- Site E-commerce -->
+    <div class="service-card reveal" data-cat="web">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(59,130,246,0.12))">🛒</div>
+      <span class="card-tag tag-free">Gratuit</span>
+      <div class="card-title">Site E-commerce</div>
+      <div class="card-desc">Boutique en ligne complète avec gestion des produits, paiements sécurisés et tableau de bord admin. Gratuit sauf si tu veux intégrer de l'IA.</div>
+      <ul class="card-features">
+        <li>Paiement Stripe / PayPal</li>
+        <li>Gestion stocks & commandes</li>
+        <li>Interface admin intuitive</li>
+        <li>SSL & sécurité inclus</li>
+      </ul>
+      <div class="card-price">Gratuit <span>/ + supplément si IA</span></div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Site E-commerce')">Commander ce service</button>
+    </div>
+
+    <!-- Serveur VPS -->
+    <div class="service-card reveal" data-cat="server">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(123,92,250,0.1))">🖥️</div>
+      <span class="card-tag tag-free">Gratuit</span>
+      <div class="card-title">Serveur / Hébergement</div>
+      <div class="card-desc">Configuration et mise en place de serveur VPS, hébergement web ou hébergement de bot Discord. Service entièrement gratuit.</div>
+      <ul class="card-features">
+        <li>Configuration VPS complète</li>
+        <li>Hébergement web statique ou dynamique</li>
+        <li>Pare-feu & sécurité SSH</li>
+        <li>100% gratuit</li>
+      </ul>
+      <div class="card-price">Gratuit <span>/ service offert</span></div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Serveur / Hébergement')">Commander ce service</button>
+    </div>
+
+    <!-- Logo -->
+    <div class="service-card reveal" data-cat="design">
+      <div class="card-icon" style="background:linear-gradient(135deg,rgba(224,64,251,0.12),rgba(251,191,36,0.1))">🎨</div>
+      <span class="card-tag tag-free">Gratuit</span>
+      <div class="card-title">Logo & Identité Visuelle</div>
+      <div class="card-desc">Logo simple ou pack identité complet (logo + bannière + icônes + charte couleurs). Livré en HD sous tous formats. Entièrement gratuit !</div>
+      <ul class="card-features">
+        <li>Logo simple & personnalisé</li>
+        <li>Pack identité complète disponible</li>
+        <li>Formats PNG, SVG, PDF</li>
+        <li>100% gratuit</li>
+      </ul>
+      <div class="card-price">Gratuit <span>/ service offert</span></div>
+      <br>
+      <button class="card-btn" onclick="openOrder('Logo & Identité Visuelle')">Commander ce service</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- TICKETS -->
+<section id="tickets">
+  <div class="section-header reveal">
+    <span class="section-tag">Support</span>
+    <h2 class="section-title">Système de tickets</h2>
+    <p class="section-sub">Ouvre un ticket et reçois un lien unique vers ta discussion privée avec l'équipe Duck Dev.</p>
+  </div>
+
+  <div class="tickets-layout">
+    <!-- Formulaire ticket -->
+    <div class="ticket-form-wrap reveal">
+      <div class="ticket-form-title">
+        <div class="icon">🎫</div>
+        Ouvrir un ticket
+      </div>
+
+      <div class="form-group">
+        <label>Pseudo Discord</label>
+        <input type="text" id="t-pseudo" placeholder="ex: DuckUser#0001">
+      </div>
+
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="t-cat">
+          <option value="">— Choisir une catégorie —</option>
+          <option>Bot Discord Custom</option>
+          <option>Hébergement Bot 24/7</option>
+          <option>Site Vitrine</option>
+          <option>Site E-commerce</option>
+          <option>Serveur VPS</option>
+          <option>Logo / Design</option>
+          <option>Support technique</option>
+          <option>Autre</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Sujet</label>
+        <input type="text" id="t-subject" placeholder="Résumé de ta demande">
+      </div>
+
+      <div class="form-group">
+        <label>Description détaillée</label>
+        <textarea id="t-desc" placeholder="Décris ton projet, tes besoins, tes contraintes..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Niveau de priorité</label>
+        <div class="priority-row">
+          <button class="priority-btn" id="p-low" onclick="setPriority('low')">🟢 Faible</button>
+          <button class="priority-btn" id="p-med" onclick="setPriority('med')">🟡 Moyen</button>
+          <button class="priority-btn" id="p-high" onclick="setPriority('high')">🔴 Élevé</button>
+        </div>
+      </div>
+
+      <button class="form-submit" onclick="submitTicket()">Envoyer le ticket →</button>
+    </div>
+
+    <!-- Info + Chat demo -->
+    <div class="ticket-chat-wrap">
+      <div class="chat-info-box reveal">
+        <div class="chat-info-title">💬 Comment ça fonctionne ?</div>
+        <ul class="chat-steps">
+          <li>
+            <span class="step-num">1</span>
+            Remplis le formulaire avec toutes les infos de ta demande.
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            Tu reçois un lien unique vers ta discussion privée avec l'équipe.
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            Échange en temps réel avec un admin, suis l'avancement de ton ticket.
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            Une fois résolu, tu peux clore le ticket toi-même depuis ta page.
+          </li>
+        </ul>
+      </div>
+
+      <!-- Demo chat -->
+      <div class="chat-demo reveal">
+        <div class="chat-demo-header">
+          <span class="status-dot"></span>
+          <span class="ticket-id">Ticket #TK-20482 · Bot Custom</span>
+          <span class="ticket-status">En cours</span>
+        </div>
+        <div class="chat-messages" id="demo-messages">
+          <div class="msg msg-user">
+            Bonjour, je voudrais un bot de modération avec système de logs et auto-sanctions.
+            <div class="msg-meta">Vous · 14:32</div>
+          </div>
+          <div class="msg msg-admin">
+            Salut ! Pas de problème, je peux faire ça. Tu veux des logs dans un channel dédié ou via webhook ? Et pour les sanctions : warn/mute/kick/ban ?
+            <div class="msg-meta msg-meta-left">Admin Duck · 14:35</div>
+          </div>
+          <div class="msg msg-user">
+            Channel dédié, et oui les 4 types de sanction avec durée configurable si possible.
+            <div class="msg-meta">Vous · 14:37</div>
+          </div>
+          <div class="msg msg-admin">
+            Parfait, c'est tout à fait faisable. Je te prépare un devis dans l'heure. 🦆
+            <div class="msg-meta msg-meta-left">Admin Duck · 14:39</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="demo-chat-input" placeholder="Envoyer un message..." onkeydown="if(event.key==='Enter')sendDemoMsg()">
+          <button class="chat-send-btn" onclick="sendDemoMsg()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-layout">
+    <div class="about-visual reveal">
+      <div class="about-card-main">
+        <span class="about-duck">🦆</span>
+        <h3>Duck Dev</h3>
+        <p>Studio de développement indépendant</p>
+      </div>
+    </div>
+
+    <div class="about-text reveal">
+      <span class="section-tag">À propos</span>
+      <h2>Qui est Duck Dev ?</h2>
+      <p>Duck Dev est un studio de développement passionné, spécialisé dans les solutions Discord et web. Chaque projet est traité avec soin, rigueur et une vraie attention au détail.</p>
+      <p>La philosophie : livrer des produits qui <strong style="color:var(--violet2)">fonctionnent vraiment</strong>, qui sont maintenables, et qui correspondent exactement à ce que le client a demandé — sans blabla.</p>
+      <p>Qu'il s'agisse d'un bot Discord complexe, d'un site vitrine soigné ou d'un logo mémorable, Duck Dev est là pour transformer tes idées en réalité digitale.</p>
+
+      <div class="about-skills">
+        <span class="skill-pill">Discord.js</span>
+        <span class="skill-pill">Node.js</span>
+        <span class="skill-pill">Python</span>
+        <span class="skill-pill">React</span>
+        <span class="skill-pill">HTML/CSS</span>
+        <span class="skill-pill">Figma</span>
+        <span class="skill-pill">VPS Linux</span>
+        <span class="skill-pill">MongoDB</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-header reveal" style="text-align:center">
+    <span class="section-tag">FAQ</span>
+    <h2 class="section-title">Questions fréquentes</h2>
+    <p class="section-sub" style="margin:0 auto">Tout ce que tu veux savoir avant de commander.</p>
+  </div>
+
+  <div class="faq-grid">
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Comment passer une commande ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Clique sur "Commander ce service" sur l'offre de ton choix, ou ouvre un ticket dans la section Support. Tu seras contacté rapidement via Discord pour discuter des détails.</div>
+    </div>
+
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Pourquoi les sites web sont gratuits ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Les sites web (vitrine, e-commerce, portfolio, etc.) sont proposés gratuitement. Le seul cas où un supplément s'applique, c'est si tu souhaites intégrer de l'intelligence artificielle dans ton site (chatbot IA, recommandations automatiques, etc.).</div>
+    </div>
+
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Pourquoi les bots Discord sont payants ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Le développement d'un bot custom demande du temps et des ressources. Le tarif démarre à 10€ et inclut l'hébergement 24/7. Le prix final dépend de la complexité des fonctionnalités demandées — un devis gratuit est toujours établi avant de commencer.</div>
+    </div>
+
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Quels types de sites web faites-vous ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Tous types : site vitrine, e-commerce, portfolio, landing page, blog, site communautaire, application web, dashboard... Si tu as un projet en tête, on peut le faire !</div>
+    </div>
+
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Les serveurs sont vraiment gratuits ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Oui ! La configuration de serveur VPS, l'hébergement web et l'hébergement de bot sont entièrement gratuits. C'est un service offert à la communauté Duck Dev.</div>
+    </div>
+
+    <div class="faq-item reveal">
+      <button class="faq-question" onclick="toggleFaq(this)">
+        Le code source m'appartient-il ?
+        <span class="faq-arrow">▼</span>
+      </button>
+      <div class="faq-answer">Oui, une fois le projet livré et payé (pour les services payants), le code t'appartient entièrement. Tu en fais ce que tu veux.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-header reveal">
+    <span class="section-tag">Contact</span>
+    <h2 class="section-title">Parlons de ton projet</h2>
+    <p class="section-sub">Un projet en tête ? Envoie un message ou rejoins le Discord.</p>
+  </div>
+
+  <div class="contact-layout">
+    <div class="contact-info reveal">
+      <div class="contact-card">
+        <div class="contact-card-icon">🎮</div>
+        <div class="contact-card-text">
+          <strong>Discord</strong>
+          <span>Rejoins le serveur Duck Dev pour discuter directement</span>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-icon">⏰</div>
+        <div class="contact-card-text">
+          <strong>Temps de réponse</strong>
+          <span>Réponse garantie en moins de 2 heures en journée</span>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-icon">🎫</div>
+        <div class="contact-card-text">
+          <strong>Ticket de support</strong>
+          <span>Pour un suivi structuré, utilise notre système de tickets</span>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="contact-card-icon">📋</div>
+        <div class="contact-card-text">
+          <strong>Devis gratuit</strong>
+          <span>Estimation sans engagement, réponse sous 24h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form reveal">
+      <div class="contact-form-title">Envoie un message rapide</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prénom / Pseudo</label>
+          <input type="text" id="c-name" placeholder="Ton nom">
+        </div>
+        <div class="form-group">
+          <label>Discord Tag</label>
+          <input type="text" id="c-discord" placeholder="ex: user#0001">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Sujet</label>
+        <input type="text" id="c-subject" placeholder="De quoi tu veux parler ?">
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="c-msg" placeholder="Décris ton projet ou ta question..."></textarea>
+      </div>
+      <button class="form-submit" onclick="submitContact()">Envoyer le message →</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="nav-logo" style="display:inline-flex;margin-bottom:0">
+        <div class="duck-icon">🦆</div>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem">Duck Dev</span>
+      </div>
+      <p>Studio de développement indépendant spécialisé en bots Discord, sites web et solutions digitales sur mesure.</p>
+      <a class="footer-discord-btn" href="#" onclick="return false">
+        <span>🎮</span> Rejoindre le Discord
+      </a>
+    </div>
+
+    <div class="footer-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a onclick="scrollTo('services')">Bot Discord Custom</a></li>
+        <li><a onclick="scrollTo('services')">Hébergement Bot</a></li>
+        <li><a onclick="scrollTo('services')">Site Vitrine</a></li>
+        <li><a onclick="scrollTo('services')">Site E-commerce</a></li>
+        <li><a onclick="scrollTo('services')">Serveur VPS</a></li>
+        <li><a onclick="scrollTo('services')">Logo & Design</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a onclick="scrollTo('tickets')">Ouvrir un ticket</a></li>
+        <li><a onclick="scrollTo('faq')">FAQ</a></li>
+        <li><a onclick="scrollTo('contact')">Contact</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Studio</h4>
+      <ul>
+        <li><a onclick="scrollTo('about')">À propos</a></li>
+        <li><a href="#">CGV</a></li>
+        <li><a href="#">Politique de confidentialité</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>© 2025 <a href="#">Duck Dev</a> · Tous droits réservés</p>
+    <p>Fait avec 🦆 et beaucoup de ☕</p>
+  </div>
+</footer>
+
+<!-- MODAL TICKET SUCCESS -->
+<div class="modal-overlay" id="ticket-modal">
+  <div class="modal-box">
+    <span class="modal-icon">✅</span>
+    <h3>Ticket envoyé !</h3>
+    <p>Ton ticket a été créé avec succès. Voici ton lien unique pour accéder à ta discussion privée avec l'équipe Duck Dev.</p>
+    <div class="modal-link-box">
+      <span id="modal-link-text">https://duckdev.fr/ticket/TK-XXXXX</span>
+      <button class="modal-copy-btn" onclick="copyLink()">Copier</button>
+    </div>
+    <button class="modal-close" onclick="closeModal()">Accéder au ticket →</button>
+  </div>
+</div>
+
+<!-- MODAL CONTACT SUCCESS -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal-box">
+    <span class="modal-icon">📨</span>
+    <h3>Message envoyé !</h3>
+    <p>Merci pour ton message ! L'équipe Duck Dev te répondra dans les 2 heures.</p>
+    <button class="modal-close" onclick="closeContactModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- CART PANEL -->
+<div class="cart-panel" id="cart-panel">
+  <div class="cart-panel-header">
+    <h3>🛒 Mon panier <span id="cart-count-label" style="color:var(--text3);font-weight:400;font-size:0.85rem"></span></h3>
+    <button class="cart-close-btn" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="cart-items-list" id="cart-items-list">
+    <div class="cart-empty">
+      <span class="cart-empty-icon">🛒</span>
+      <span>Ton panier est vide</span>
+      <span style="font-size:0.8rem;color:var(--text3)">Ajoute des services depuis le catalogue</span>
+    </div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-user-fields">
+      <!-- Affiché si pas connecté Discord -->
+      <div id="cart-discord-guest">
+        <button class="discord-login-btn" onclick="loginWithDiscord()" style="margin-bottom:8px">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+          Se connecter avec Discord pour commander
+        </button>
+        <p style="font-size:0.72rem;color:var(--text3);text-align:center;margin:0">Connexion requise pour passer commande</p>
+      </div>
+      <!-- Affiché si connecté Discord -->
+      <div id="cart-discord-logged" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.25);border-radius:9px;margin-bottom:8px">
+          <div class="nav-user-avatar-placeholder" id="cart-avatar" style="width:32px;height:32px;font-size:0.85rem">?</div>
+          <div>
+            <div style="font-size:0.85rem;font-weight:600" id="cart-username-display">—</div>
+            <div style="font-size:0.72rem;color:var(--text3)">Compte Discord lié ✅</div>
+          </div>
+        </div>
+        <input type="hidden" id="cart-pseudo">
+        <input type="text" id="cart-description" placeholder="📝 Infos supplémentaires (optionnel)" style="background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;width:100%;transition:border-color 0.2s;">
+      </div>
+    </div>
+    <button class="cart-validate-btn" id="cart-validate-btn" onclick="validateCart()">
+      Valider la commande →
+    </button>
+  </div>
+</div>
+
+<!-- ORDER DISCUSSION PAGE -->
+<div class="order-page" id="order-page">
+  <div class="order-page-header">
+    <button class="order-back-btn" onclick="closeOrderPage()">← Retour</button>
+    <span class="order-page-id" id="order-page-id">Commande #CMD-XXXXX</span>
+    <button class="order-page-status-badge status-attente" id="order-status-badge">⏳ En attente</button>
+  </div>
+
+  <div class="order-page-body">
+    <!-- LEFT : recap + progress + admin -->
+    <div class="order-left">
+      <div class="order-recap">
+        <div class="order-recap-title">📦 Services commandés</div>
+        <div id="order-recap-items"></div>
+        <div style="margin-top:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;font-size:0.78rem;color:var(--text2)">
+          <strong style="color:var(--text)">Client :</strong> <span id="order-recap-pseudo">—</span>
+        </div>
+      </div>
+
+      <div class="order-progress">
+        <div class="progress-title">📊 Avancement</div>
+        <div class="progress-steps" id="progress-steps">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <div class="order-admin-panel" id="order-admin-panel" style="display:none">
+        <div class="admin-panel-title">⚙️ Panneau Admin — Changer le statut</div>
+        <div class="admin-status-btns">
+          <button class="admin-status-btn status-attente" onclick="setOrderStatus('attente')">⏳ En attente</button>
+          <button class="admin-status-btn status-encours" onclick="setOrderStatus('encours')">🔧 En cours</button>
+          <button class="admin-status-btn status-evaluation" onclick="setOrderStatus('evaluation')">🔍 En évaluation</button>
+          <button class="admin-status-btn status-fini" onclick="setOrderStatus('fini')">✅ Terminé</button>
+          <button class="admin-status-btn status-annule" onclick="setOrderStatus('annule')" style="grid-column:span 2">❌ Annulé</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT : chat -->
+    <div class="order-chat">
+      <div class="order-chat-header">
+        <span class="status-dot" style="width:8px;height:8px;background:#4ade80;border-radius:50%;box-shadow:0 0 8px #4ade80;animation:pulse 2s infinite;flex-shrink:0"></span>
+        <span class="order-chat-title">Discussion privée</span>
+        <span class="order-chat-sub" id="order-chat-sub">Admin Duck est en ligne</span>
+      </div>
+      <div class="order-chat-messages" id="order-chat-messages"></div>
+      <div class="order-chat-input-row">
+        <input type="text" id="order-chat-input" placeholder="Envoyer un message..." onkeydown="if(event.key==='Enter')sendOrderMsg()">
+        <button class="order-chat-send" onclick="sendOrderMsg()">Envoyer ➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MAINTENANCE BANNER -->
+<div class="maintenance-banner" id="maintenance-banner">
+  🔧 Site en maintenance — Certaines fonctionnalités peuvent être indisponibles. Merci de votre patience.
+</div>
+
+<!-- ADMIN LOGIN OVERLAY -->
+<div class="admin-login-overlay" id="admin-login-overlay">
+  <div class="admin-login-box">
+    <span class="admin-login-icon" id="admin-login-icon">🔐</span>
+    <h2 id="admin-login-title">Accès Admin</h2>
+    <p id="admin-login-sub">Entrez votre code secret pour accéder au panel.</p>
+    <!-- Affichage du compte Discord lié si connecté -->
+    <div id="admin-discord-info" class="admin-discord-info" style="display:none">
+      <div class="nav-user-avatar-placeholder" id="admin-login-avatar" style="width:32px;height:32px;font-size:0.85rem">?</div>
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3)">Connecté en tant que</div>
+        <strong id="admin-login-username">—</strong>
+      </div>
+    </div>
+    <!-- Bouton connexion Discord si pas connecté -->
+    <div id="admin-discord-login-prompt" style="margin-bottom:1rem">
+      <button class="discord-login-btn" onclick="loginWithDiscord()">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+        Se connecter avec Discord d'abord
+      </button>
+    </div>
+    <input type="password" class="admin-pin-input" id="admin-pin-input" maxlength="6" placeholder="······" onkeydown="if(event.key==='Enter')checkAdminPin()">
+    <button class="admin-login-btn" onclick="checkAdminPin()">Accéder →</button><br>
+    <button class="admin-login-cancel" onclick="closeAdminLogin()">Annuler</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PANEL FONDATION (code: 188888)
+═══════════════════════════════════ -->
+<div class="admin-panel-page" id="panel-fondation">
+  <div class="admin-topbar">
+    <div class="admin-topbar-logo">
+      <div class="duck-icon" style="width:30px;height:30px;font-size:0.9rem">🦆</div>
+      Duck Dev
+    </div>
+    <span class="admin-role-badge badge-fondation">👑 Fondation</span>
+    <span style="font-size:0.78rem;color:var(--text3);margin-left:4px" id="fondation-time"></span>
+    <button class="admin-topbar-close" onclick="closePanel('fondation')">✕ Fermer le panel</button>
+  </div>
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-section">Vue générale</div>
+      <button class="admin-nav-btn active" onclick="switchFondationTab('dashboard',this)">📊 Dashboard</button>
+      <button class="admin-nav-btn" onclick="switchFondationTab('commandes',this)">📦 Commandes</button>
+      <button class="admin-nav-btn" onclick="switchFondationTab('discussions',this)">💬 Discussions</button>
+      <div class="admin-sidebar-section">Site</div>
+      <button class="admin-nav-btn" onclick="switchFondationTab('site',this)">🌐 Paramètres site</button>
+      <button class="admin-nav-btn" onclick="switchFondationTab('services-mgmt',this)">🛒 Gérer les offres</button>
+      <button class="admin-nav-btn" onclick="switchFondationTab('maintenance',this)">🔧 Maintenance</button>
+      <div class="admin-sidebar-section">Équipe</div>
+      <button class="admin-nav-btn" onclick="switchFondationTab('equipe',this)">👥 Modérateurs</button>
+      <button class="admin-nav-btn" onclick="switchFondationTab('logs',this)">📋 Logs d'activité</button>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+
+      <!-- DASHBOARD -->
+      <div class="admin-tab active" id="f-tab-dashboard">
+        <div class="admin-section-head">
+          <h2>📊 Dashboard Fondation</h2>
+          <span style="font-size:0.8rem;color:var(--text3)">Vue d'ensemble en temps réel</span>
+        </div>
+        <div class="admin-stats-row">
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="f-stat-orders">0</div>
+            <div class="admin-stat-lbl">Commandes totales</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="f-stat-pending">0</div>
+            <div class="admin-stat-lbl">En attente</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="f-stat-done">0</div>
+            <div class="admin-stat-lbl">Terminées</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="f-stat-revenue">0€</div>
+            <div class="admin-stat-lbl">Revenus estimés</div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">⚡ Actions rapides</div>
+          <div style="display:flex;gap:0.7rem;flex-wrap:wrap">
+            <button class="admin-save-btn" style="margin-top:0" onclick="switchFondationTab('maintenance',document.querySelector('#panel-fondation .admin-nav-btn[onclick*=maintenance]'))">🔧 Gérer maintenance</button>
+            <button class="admin-save-btn" style="margin-top:0;background:linear-gradient(135deg,#4ade80,#22c55e);box-shadow:0 4px 16px rgba(74,222,128,0.3)" onclick="switchFondationTab('commandes',document.querySelector('#panel-fondation .admin-nav-btn[onclick*=commandes]'))">📦 Voir commandes</button>
+            <button class="admin-save-btn" style="margin-top:0;background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 16px rgba(245,158,11,0.3);color:#000" onclick="switchFondationTab('equipe',document.querySelector('#panel-fondation .admin-nav-btn[onclick*=equipe]'))">👥 Gérer équipe</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">📢 Annonce globale</div>
+          <textarea class="admin-textarea" id="f-annonce" placeholder="Écrire une annonce visible sur le site..."></textarea>
+          <div style="display:flex;gap:0.7rem;margin-top:0.7rem">
+            <button class="admin-save-btn" style="margin-top:0" onclick="saveAnnonce()">Publier l'annonce</button>
+            <button class="admin-save-btn" style="margin-top:0;background:var(--surface2);box-shadow:none;color:var(--text2);border:1px solid var(--border)" onclick="clearAnnonce()">Effacer</button>
+          </div>
+          <div id="f-annonce-preview" style="display:none;margin-top:0.8rem;padding:10px 14px;background:rgba(123,92,250,0.08);border:1px solid var(--border);border-radius:9px;font-size:0.85rem;color:var(--text2)"></div>
+        </div>
+      </div>
+
+      <!-- COMMANDES -->
+      <div class="admin-tab" id="f-tab-commandes">
+        <div class="admin-section-head">
+          <h2>📦 Toutes les commandes</h2>
+          <input class="admin-input" style="width:220px" placeholder="🔍 Rechercher..." oninput="filterOrdersTable(this.value,'f-orders-tbody')">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead><tr>
+              <th>ID</th><th>Client</th><th>Services</th><th>Statut</th><th>Date</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="f-orders-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Aucune commande pour l'instant.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DISCUSSIONS -->
+      <div class="admin-tab" id="f-tab-discussions">
+        <div class="admin-section-head"><h2>💬 Discussions clients</h2></div>
+        <div class="admin-chat-layout">
+          <div class="admin-chat-list">
+            <div class="admin-chat-list-head">Conversations</div>
+            <div id="f-conv-list"><div style="padding:20px;text-align:center;color:var(--text3);font-size:0.85rem">Aucune discussion active.</div></div>
+          </div>
+          <div class="admin-chat-view" id="f-chat-view">
+            <div class="admin-chat-view-head">
+              <span class="admin-chat-view-title">Sélectionne une discussion</span>
+            </div>
+            <div class="admin-chat-view-msgs" id="f-chat-msgs" style="align-items:center;justify-content:center">
+              <span style="color:var(--text3);font-size:0.88rem">Aucune discussion sélectionnée</span>
+            </div>
+            <div class="admin-chat-view-input">
+              <input type="text" placeholder="Répondre en tant qu'Admin Duck..." id="f-reply-input" onkeydown="if(event.key==='Enter')sendAdminReply('fondation')">
+              <button class="admin-chat-send-btn" onclick="sendAdminReply('fondation')">Envoyer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARAMÈTRES SITE -->
+      <div class="admin-tab" id="f-tab-site">
+        <div class="admin-section-head"><h2>🌐 Paramètres du site</h2></div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">🎨 Apparence</div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Couleur principale</div><div class="settings-row-sub">Couleur du thème violet/bleu</div></div>
+            <div class="color-grid">
+              <div class="color-swatch selected" style="background:linear-gradient(135deg,#7b5cfa,#3b82f6)" onclick="applyTheme('violet-blue',this)" title="Violet/Bleu"></div>
+              <div class="color-swatch" style="background:linear-gradient(135deg,#e040fb,#7b5cfa)" onclick="applyTheme('pink-violet',this)" title="Rose/Violet"></div>
+              <div class="color-swatch" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)" onclick="applyTheme('cyan-blue',this)" title="Cyan/Bleu"></div>
+              <div class="color-swatch" style="background:linear-gradient(135deg,#10b981,#3b82f6)" onclick="applyTheme('green-blue',this)" title="Vert/Bleu"></div>
+              <div class="color-swatch" style="background:linear-gradient(135deg,#f59e0b,#ef4444)" onclick="applyTheme('orange-red',this)" title="Orange/Rouge"></div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Mode sombre forcé</div><div class="settings-row-sub">Empêche le mode clair</div></div>
+            <div class="toggle-wrap"><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">📝 Textes du site</div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label style="font-size:0.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.4rem">Titre Hero</label>
+            <input class="admin-input" id="site-hero-title" value="Ton studio dev sans compromis">
+          </div>
+          <div class="form-group" style="margin-bottom:1rem">
+            <label style="font-size:0.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.4rem">Sous-titre Hero</label>
+            <textarea class="admin-textarea" id="site-hero-sub" style="min-height:60px">Bots Discord sur mesure, sites web, hébergement & design.</textarea>
+          </div>
+          <div class="form-group">
+            <label style="font-size:0.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.4rem">Badge de disponibilité</label>
+            <input class="admin-input" id="site-badge-text" value="Disponible — Répond en moins de 2h">
+          </div>
+          <button class="admin-save-btn" onclick="applySiteTexts()">Appliquer les changements</button>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">📊 Statistiques affichées</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Projets réalisés</label><input class="admin-input" id="stat-projects" value="120"></div>
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Clients satisfaits</label><input class="admin-input" id="stat-clients" value="98"></div>
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Temps de réponse (h)</label><input class="admin-input" id="stat-response" value="2"></div>
+          </div>
+          <button class="admin-save-btn" onclick="applyStats()">Mettre à jour les stats</button>
+        </div>
+      </div>
+
+      <!-- GÉRER LES OFFRES -->
+      <div class="admin-tab" id="f-tab-services-mgmt">
+        <div class="admin-section-head"><h2>🛒 Gérer les offres</h2></div>
+        <div id="services-mgmt-list"></div>
+        <div class="settings-card" style="border:1px dashed rgba(123,92,250,0.3)">
+          <div class="settings-card-title">➕ Ajouter une nouvelle offre</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.8rem">
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Nom du service</label><input class="admin-input" id="new-service-name" placeholder="ex: Bot de Musique"></div>
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Catégorie</label>
+              <select class="admin-input" id="new-service-cat" style="cursor:pointer">
+                <option value="discord">🤖 Bot Discord</option>
+                <option value="web">🌐 Site Web</option>
+                <option value="server">🖥️ Serveur</option>
+                <option value="design">🎨 Design</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.8rem">
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Prix affiché</label><input class="admin-input" id="new-service-price" placeholder="ex: Gratuit ou À partir de 15€"></div>
+            <div><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Badge</label>
+              <select class="admin-input" id="new-service-badge" style="cursor:pointer">
+                <option value="free">Gratuit</option>
+                <option value="paid">Payant</option>
+                <option value="devis">Sur devis</option>
+              </select>
+            </div>
+          </div>
+          <textarea class="admin-textarea" id="new-service-desc" placeholder="Description du service..."></textarea>
+          <button class="admin-save-btn" onclick="addNewService()">Ajouter l'offre</button>
+        </div>
+      </div>
+
+      <!-- MAINTENANCE -->
+      <div class="admin-tab" id="f-tab-maintenance">
+        <div class="admin-section-head"><h2>🔧 Maintenance & Statut du site</h2></div>
+        <div class="settings-card">
+          <div class="settings-card-title">🚦 Statut du site</div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Mode maintenance</div><div class="settings-row-sub">Affiche une bannière d'avertissement sur tout le site</div></div>
+            <div class="toggle-wrap">
+              <div class="toggle" id="maintenance-toggle" onclick="toggleMaintenance(this)"></div>
+              <span id="maintenance-status-label" style="font-size:0.82rem;color:var(--text3)">Inactif</span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Bloquer les nouvelles commandes</div><div class="settings-row-sub">Désactive le bouton "Commander" sur le site</div></div>
+            <div class="toggle-wrap"><div class="toggle" id="block-orders-toggle" onclick="this.classList.toggle('on');showToast(this.classList.contains('on') ? 'Commandes bloquées !' : 'Commandes réactivées !','⚙️')"></div></div>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Mode lecture seule</div><div class="settings-row-sub">Désactive les formulaires de contact et tickets</div></div>
+            <div class="toggle-wrap"><div class="toggle" onclick="this.classList.toggle('on');showToast('Paramètre mis à jour','⚙️')"></div></div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">📢 Message de maintenance personnalisé</div>
+          <textarea class="admin-textarea" id="maintenance-msg" placeholder="ex: Site en maintenance pour mise à jour. Retour prévu dans 2h.">🔧 Site en maintenance — Certaines fonctionnalités peuvent être indisponibles. Merci de votre patience.</textarea>
+          <button class="admin-save-btn" onclick="applyMaintenanceMsg()">Mettre à jour le message</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">🗑️ Actions critiques</div>
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+            <button class="admin-save-btn" style="margin-top:0;background:rgba(248,113,113,0.15);color:#f87171;box-shadow:none;border:1px solid rgba(248,113,113,0.3)" onclick="confirmDanger('Vider toutes les commandes ?')">🗑️ Vider les commandes</button>
+            <button class="admin-save-btn" style="margin-top:0;background:rgba(251,191,36,0.12);color:#fbbf24;box-shadow:none;border:1px solid rgba(251,191,36,0.25)" onclick="confirmDanger('Recharger le cache du site ?')">🔄 Vider le cache</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ÉQUIPE -->
+      <div class="admin-tab" id="f-tab-equipe">
+        <div class="admin-section-head"><h2>👥 Gestion de l'équipe</h2></div>
+        <div class="settings-card">
+          <div class="settings-card-title">🛡️ Modérateurs actifs</div>
+          <table class="admin-table" style="margin-top:0">
+            <thead><tr><th>Pseudo</th><th>Rôle</th><th>Commandes gérées</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>DuckModo#0001</strong></td>
+                <td><span class="tbl-badge status-encours">Modérateur</span></td>
+                <td>12</td>
+                <td><span class="tbl-badge status-fini">Actif</span></td>
+                <td>
+                  <button class="admin-action-btn status-annule" onclick="showToast('Modérateur suspendu','⚠️')">Suspendre</button>
+                  <button class="admin-action-btn status-evaluation" onclick="showToast('Rôle mis à jour','✅')">Promouvoir</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>DuckHelper#0042</strong></td>
+                <td><span class="tbl-badge status-encours">Modérateur</span></td>
+                <td>8</td>
+                <td><span class="tbl-badge status-fini">Actif</span></td>
+                <td>
+                  <button class="admin-action-btn status-annule" onclick="showToast('Modérateur suspendu','⚠️')">Suspendre</button>
+                  <button class="admin-action-btn status-evaluation" onclick="showToast('Rôle mis à jour','✅')">Promouvoir</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="settings-card" style="border:1px dashed rgba(123,92,250,0.3)">
+          <div class="settings-card-title">➕ Ajouter un modérateur</div>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1"><label style="font-size:0.78rem;color:var(--text2);display:block;margin-bottom:0.3rem">Pseudo Discord</label><input class="admin-input" id="new-modo-pseudo" placeholder="ex: DuckModo#0000"></div>
+            <button class="admin-save-btn" style="margin-top:0" onclick="addModerator()">Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGS -->
+      <div class="admin-tab" id="f-tab-logs">
+        <div class="admin-section-head"><h2>📋 Logs d'activité</h2></div>
+        <div class="settings-card">
+          <div id="f-logs-list" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">
+            <div style="padding:20px;text-align:center;color:var(--text3);font-size:0.85rem">Aucun log pour l'instant. Les actions seront enregistrées ici.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /admin-content -->
+  </div><!-- /admin-body -->
+</div><!-- /panel-fondation -->
+
+
+<!-- ═══════════════════════════════════
+     PANEL MODÉRATEUR (code: 176543)
+═══════════════════════════════════ -->
+<div class="admin-panel-page" id="panel-moderateur">
+  <div class="admin-topbar">
+    <div class="admin-topbar-logo">
+      <div class="duck-icon" style="width:30px;height:30px;font-size:0.9rem">🦆</div>
+      Duck Dev
+    </div>
+    <span class="admin-role-badge badge-moderateur">🛡️ Modérateur</span>
+    <span style="font-size:0.78rem;color:var(--text3);margin-left:4px" id="modo-time"></span>
+    <button class="admin-topbar-close" onclick="closePanel('moderateur')">✕ Fermer le panel</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-section">Modération</div>
+      <button class="admin-nav-btn active" onclick="switchModoTab('m-dashboard',this)">📊 Tableau de bord</button>
+      <button class="admin-nav-btn" onclick="switchModoTab('m-commandes',this)">📦 Commandes</button>
+      <button class="admin-nav-btn" onclick="switchModoTab('m-discussions',this)">💬 Discussions</button>
+      <button class="admin-nav-btn" onclick="switchModoTab('m-tickets',this)">🎫 Tickets</button>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- DASHBOARD MODO -->
+      <div class="admin-tab active" id="m-tab-m-dashboard">
+        <div class="admin-section-head">
+          <h2>📊 Tableau de bord Modérateur</h2>
+        </div>
+        <div class="admin-stats-row">
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="m-stat-total">0</div>
+            <div class="admin-stat-lbl">Commandes totales</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="m-stat-pending">0</div>
+            <div class="admin-stat-lbl">En attente de traitement</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="m-stat-inprogress">0</div>
+            <div class="admin-stat-lbl">En cours</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-num" id="m-stat-done">0</div>
+            <div class="admin-stat-lbl">Terminées</div>
+          </div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-title">⏰ Commandes récentes à traiter</div>
+          <div id="m-recent-orders">
+            <div style="text-align:center;color:var(--text3);padding:20px;font-size:0.85rem">Aucune commande en attente.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMANDES MODO -->
+      <div class="admin-tab" id="m-tab-m-commandes">
+        <div class="admin-section-head">
+          <h2>📦 Gestion des commandes</h2>
+          <input class="admin-input" style="width:220px" placeholder="🔍 Rechercher..." oninput="filterOrdersTable(this.value,'m-orders-tbody')">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead><tr><th>ID</th><th>Client</th><th>Services</th><th>Statut</th><th>Actions</th></tr></thead>
+            <tbody id="m-orders-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:30px">Aucune commande pour l'instant.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DISCUSSIONS MODO -->
+      <div class="admin-tab" id="m-tab-m-discussions">
+        <div class="admin-section-head"><h2>💬 Discussions clients</h2></div>
+        <div class="admin-chat-layout">
+          <div class="admin-chat-list">
+            <div class="admin-chat-list-head">Conversations</div>
+            <div id="m-conv-list"><div style="padding:20px;text-align:center;color:var(--text3);font-size:0.85rem">Aucune discussion active.</div></div>
+          </div>
+          <div class="admin-chat-view">
+            <div class="admin-chat-view-head">
+              <span class="admin-chat-view-title" id="m-chat-conv-title">Sélectionne une discussion</span>
+              <div id="m-chat-status-btns" style="margin-left:auto;display:flex;gap:6px"></div>
+            </div>
+            <div class="admin-chat-view-msgs" id="m-chat-msgs" style="align-items:center;justify-content:center">
+              <span style="color:var(--text3);font-size:0.88rem">Aucune discussion sélectionnée</span>
+            </div>
+            <div class="admin-chat-view-input">
+              <input type="text" placeholder="Répondre en tant qu'Admin Duck..." id="m-reply-input" onkeydown="if(event.key==='Enter')sendAdminReply('moderateur')">
+              <button class="admin-chat-send-btn" onclick="sendAdminReply('moderateur')">Envoyer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TICKETS MODO -->
+      <div class="admin-tab" id="m-tab-m-tickets">
+        <div class="admin-section-head"><h2>🎫 Gestion des tickets</h2></div>
+        <div id="m-tickets-list">
+          <div class="settings-card" style="text-align:center;color:var(--text3);font-size:0.85rem;padding:30px">Aucun ticket ouvert pour l'instant.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DISCORD OAUTH2
+// ═══════════════════════════════════════════════════════
+
+const DISCORD_CLIENT_ID = '1481640852651774012';
+const DISCORD_REDIRECT   = 'https://lefandequad.github.io/commande-duck-';
+const DISCORD_SCOPE      = 'identify';
+
+// Utilisateur Discord courant
+let discordUser = null; // { id, username, discriminator, avatar, global_name }
+
+function loginWithDiscord() {
+  // Sauvegarder la page courante pour y revenir après OAuth
+  sessionStorage.setItem('discord_return', window.location.href);
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    redirect_uri: DISCORD_REDIRECT,
+    response_type: 'token',
+    scope: DISCORD_SCOPE
+  });
+  window.location.href = 'https://discord.com/oauth2/authorize?' + params.toString();
+}
+
+function logoutDiscord() {
+  discordUser = null;
+  sessionStorage.removeItem('discord_token');
+  sessionStorage.removeItem('discord_user');
+  updateDiscordUI();
+  showToast('Déconnecté de Discord', '👋');
+}
+
+function getDiscordUsername(user) {
+  if (!user) return '—';
+  // Discord a migré vers les "new usernames" sans discriminateur
+  return user.global_name || user.username || `${user.username}#${user.discriminator}`;
+}
+
+function getDiscordAvatarUrl(user) {
+  if (!user || !user.avatar) return null;
+  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`;
+}
+
+async function fetchDiscordUser(token) {
+  try {
+    const res = await fetch('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+function updateDiscordUI() {
+  const guestEl   = document.getElementById('nav-guest');
+  const loggedEl  = document.getElementById('nav-logged');
+  const usernameEl = document.getElementById('nav-username');
+  const avatarImg  = document.getElementById('nav-avatar-img');
+  const avatarPh   = document.getElementById('nav-avatar-placeholder');
+
+  const cartGuest  = document.getElementById('cart-discord-guest');
+  const cartLogged = document.getElementById('cart-discord-logged');
+  const cartUser   = document.getElementById('cart-username-display');
+  const cartAvatar = document.getElementById('cart-avatar');
+  const cartPseudo = document.getElementById('cart-pseudo');
+
+  const adminPrompt = document.getElementById('admin-discord-login-prompt');
+  const adminInfo   = document.getElementById('admin-discord-info');
+  const adminLoginUsername = document.getElementById('admin-login-username');
+  const adminLoginAvatar   = document.getElementById('admin-login-avatar');
+
+  if (discordUser) {
+    const name = getDiscordUsername(discordUser);
+    const avatarUrl = getDiscordAvatarUrl(discordUser);
+    const initials = name.charAt(0).toUpperCase();
+
+    // Navbar
+    if (guestEl) guestEl.style.display = 'none';
+    if (loggedEl) loggedEl.style.display = 'block';
+    if (usernameEl) usernameEl.textContent = name;
+    if (avatarUrl && avatarImg) {
+      avatarImg.src = avatarUrl;
+      avatarImg.style.display = 'block';
+      if (avatarPh) avatarPh.style.display = 'none';
+    } else if (avatarPh) {
+      avatarPh.textContent = initials;
+    }
+
+    // Panier
+    if (cartGuest) cartGuest.style.display = 'none';
+    if (cartLogged) cartLogged.style.display = 'block';
+    if (cartUser) cartUser.textContent = name;
+    if (cartAvatar) cartAvatar.textContent = initials;
+    if (cartPseudo) cartPseudo.value = name;
+
+    // Login admin
+    if (adminPrompt) adminPrompt.style.display = 'none';
+    if (adminInfo) adminInfo.style.display = 'flex';
+    if (adminLoginUsername) adminLoginUsername.textContent = name;
+    if (adminLoginAvatar) adminLoginAvatar.textContent = initials;
+
+  } else {
+    // Non connecté
+    if (guestEl) guestEl.style.display = 'block';
+    if (loggedEl) loggedEl.style.display = 'none';
+    if (cartGuest) cartGuest.style.display = 'block';
+    if (cartLogged) cartLogged.style.display = 'none';
+    if (cartPseudo) cartPseudo.value = '';
+    if (adminPrompt) adminPrompt.style.display = 'block';
+    if (adminInfo) adminInfo.style.display = 'none';
+  }
+}
+
+async function handleDiscordCallback() {
+  // Récupérer le token dans le hash de l'URL après redirection OAuth
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  const token = params.get('access_token');
+  if (!token) return;
+
+  // Nettoyer l'URL
+  history.replaceState(null, '', window.location.pathname);
+
+  // Sauvegarder le token
+  sessionStorage.setItem('discord_token', token);
+
+  showToast('Connexion Discord en cours...', '🔄');
+
+  const user = await fetchDiscordUser(token);
+  if (user) {
+    discordUser = user;
+    sessionStorage.setItem('discord_user', JSON.stringify(user));
+    updateDiscordUI();
+    showToast(`Connecté en tant que ${getDiscordUsername(user)} ! 🎉`, '✅');
+  } else {
+    showToast('Erreur de connexion Discord', '❌');
+  }
+}
+
+function restoreDiscordSession() {
+  // Essayer de restaurer la session depuis sessionStorage
+  try {
+    const savedUser = sessionStorage.getItem('discord_user');
+    const savedToken = sessionStorage.getItem('discord_token');
+    if (savedUser && savedToken) {
+      discordUser = JSON.parse(savedUser);
+      updateDiscordUI();
+    }
+  } catch(e) {}
+}
+
+// Init au chargement
+handleDiscordCallback();
+restoreDiscordSession();
+
+// ═══════════════════════════════════════════════════════
+// DUCK DEV — JS UNIFIÉ
+// ═══════════════════════════════════════════════════════
+
+// ── ÉTAT GLOBAL ──────────────────────────────────────
+let cart = [];
+let orderStatus = 'attente';
+let orderMessages = [];
+let currentOrderId = '';
+let allOrders = [];
+let activeConvId = null;
+let pendingAdminRole = '';
+let isAdminLogged = false; // true quand un admin est connecté
+
+const STATUS_CONFIG = {
+  attente:    { label: '⏳ En attente',     cls: 'status-attente',    step: 0 },
+  encours:    { label: '🔧 En cours',        cls: 'status-encours',    step: 1 },
+  evaluation: { label: '🔍 En évaluation',  cls: 'status-evaluation', step: 2 },
+  fini:       { label: '✅ Terminé',         cls: 'status-fini',       step: 3 },
+  annule:     { label: '❌ Annulé',          cls: 'status-annule',     step: -1 }
+};
+
+const PROGRESS_STEPS = [
+  { label: 'Commande reçue',              icon: '📥' },
+  { label: 'En cours de développement',  icon: '🔧' },
+  { label: 'En évaluation / révisions',  icon: '🔍' },
+  { label: 'Livraison terminée',         icon: '✅' }
+];
+
+const ADMIN_CODES = { fondation: '188888', moderateur: '176543' };
+
+// ── WEBHOOKS DISCORD ──────────────────────────────────
+const WEBHOOK_COMMANDES = 'https://discord.com/api/webhooks/1481576612989374525/pVcc1z14JTJLgW7QO2LeMqvs3Oy4OOrNXCqdrmWjo5JVjOP5SNTCXedg_ThiaCKqwU1T';
+const WEBHOOK_LOGS      = 'https://discord.com/api/webhooks/1481576809761083474/TQzWO-RkPGGr8qnkRqsI0YIBsctzu5vgmjzDb0JTVad2Tqi7u9VYVbQL-Wa_mMyCZzwM';
+
+async function sendWebhook(url, embed) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    if (!res.ok) console.warn('[Webhook] HTTP', res.status);
+  } catch (e) {
+    // Silencieux en local (CORS) — fonctionne une fois le site hébergé
+  }
+}
+
+// ── UTILITAIRES ───────────────────────────────────────
+function scrollTo(id) {
+  // Renamed to avoid shadowing native window.scrollTo
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function showToast(msg, icon = '✅') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerHTML = `<span>${icon}</span> ${msg}`;
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function getServiceIcon(name) {
+  if (!name) return '📦';
+  if (name.includes('Bot')) return '🤖';
+  if (name.includes('IA')) return '🧠';
+  if (name.includes('E-commerce')) return '🛒';
+  if (name.includes('Vitrine') || name.includes('Web') || name.includes('Site')) return '🌐';
+  if (name.includes('Serveur') || name.includes('VPS')) return '🖥️';
+  if (name.includes('Logo') || name.includes('Design') || name.includes('Identité')) return '🎨';
+  return '📦';
+}
+
+function getServiceShortDesc(name) {
+  const map = {
+    'Bot Discord Custom': 'Bot 100% sur mesure · à partir de 10€',
+    'Site Vitrine': 'Site professionnel · Gratuit',
+    'Site Web + IA intégrée': 'Site + intelligence artificielle · Sur devis',
+    'Site E-commerce': 'Boutique en ligne complète · Gratuit',
+    'Serveur / Hébergement': 'Configuration & hébergement · Gratuit',
+    'Logo & Identité Visuelle': 'Logo & charte graphique · Gratuit'
+  };
+  return map[name] || 'Service sur mesure';
+}
+
+// ── REVEAL ON SCROLL ──────────────────────────────────
+const _observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      e.target.style.transitionDelay = (i % 4 * 0.08) + 's';
+      e.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(r => _observer.observe(r));
+
+// ── COUNTERS ──────────────────────────────────────────
+const _counterObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const target = parseInt(e.target.dataset.target);
+      let count = 0;
+      const step = Math.ceil(target / 60);
+      const iv = setInterval(() => {
+        count = Math.min(count + step, target);
+        e.target.textContent = count + (target === 2 ? 'h' : '+');
+        if (count >= target) clearInterval(iv);
+      }, 25);
+      _counterObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.stat-num[data-target]').forEach(c => _counterObs.observe(c));
+
+// ── PANIER ────────────────────────────────────────────
+function openOrder(serviceName, btn) {
+  if (cart.find(i => i.name === serviceName)) {
+    showToast('Ce service est déjà dans ton panier !', '⚠️');
+    openCartPanel();
+    return;
+  }
+  cart.push({ name: serviceName, note: '', id: Date.now() });
+  updateCartUI();
+  openCartPanel();
+  showToast(`"${serviceName}" ajouté au panier !`, '🛒');
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Ajouté !';
+    setTimeout(() => { if (btn) btn.textContent = orig; }, 2000);
+  }
+}
+
+function openCartPanel() {
+  const el = document.getElementById('cart-panel');
+  if (el) el.classList.add('open');
+}
+
+function toggleCart() {
+  const el = document.getElementById('cart-panel');
+  if (el) el.classList.toggle('open');
+}
+
+function updateCartUI() {
+  const badge = document.getElementById('cart-badge');
+  const list = document.getElementById('cart-items-list');
+  const countLabel = document.getElementById('cart-count-label');
+  if (!badge || !list) return;
+
+  if (cart.length > 0) {
+    badge.textContent = cart.length;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+  if (countLabel) countLabel.textContent = cart.length > 0 ? `(${cart.length} service${cart.length > 1 ? 's' : ''})` : '';
+
+  if (cart.length === 0) {
+    list.innerHTML = `<div class="cart-empty"><span class="cart-empty-icon">🛒</span><span>Ton panier est vide</span><span style="font-size:0.8rem;color:var(--text3)">Ajoute des services depuis le catalogue</span></div>`;
+    return;
+  }
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item" id="cart-item-${item.id}">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${getServiceIcon(item.name)} ${item.name}</div>
+        <div class="cart-item-desc">${getServiceShortDesc(item.name)}</div>
+        <textarea class="cart-item-note" placeholder="Détails / précisions..." onchange="updateCartNote(${item.id}, this.value)">${item.note}</textarea>
+      </div>
+      <button class="cart-item-remove" onclick="removeFromCart(${item.id})">✕</button>
+    </div>`).join('');
+}
+
+function removeFromCart(id) {
+  const item = cart.find(i => i.id === id);
+  cart = cart.filter(i => i.id !== id);
+  updateCartUI();
+  if (item) showToast(`"${item.name}" retiré`, '🗑️');
+}
+
+function updateCartNote(id, val) {
+  const item = cart.find(i => i.id === id);
+  if (item) item.note = val;
+}
+
+// ── VALIDER LE PANIER ────────────────────────────────
+function validateCart() {
+  if (cart.length === 0) { showToast('Ton panier est vide !', '⚠️'); return; }
+
+  // Vérifier connexion Discord
+  if (!discordUser) {
+    showToast('Connecte-toi avec Discord pour commander !', '⚠️');
+    loginWithDiscord();
+    return;
+  }
+
+  const pseudo = getDiscordUsername(discordUser);
+  const discordId = discordUser.id;
+
+  currentOrderId = 'CMD-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  orderStatus = 'attente';
+  orderMessages = [];
+
+  const newOrder = {
+    id: currentOrderId, pseudo, discordId,
+    discordAvatar: getDiscordAvatarUrl(discordUser),
+    services: [...cart], status: 'attente',
+    date: new Date().toLocaleDateString('fr-FR'),
+    messages: [], createdAt: new Date()
+  };
+  allOrders.push(newOrder);
+
+  document.getElementById('cart-panel')?.classList.remove('open');
+  buildOrderPage(pseudo, [...cart]);
+  document.getElementById('order-page')?.classList.add('open');
+
+  const servicesList = cart.map(i => `• ${i.name}${i.note ? ` — "${i.note}"` : ''}`).join('\n');
+  const autoMsg = `Bonjour ! Voici ma commande :\n\n${servicesList}\n\nPseudo Discord : ${pseudo}`;
+  addOrderMessage('user', pseudo, autoMsg);
+  newOrder.messages.push({ type: 'user', author: pseudo, text: autoMsg, time: new Date().toISOString() });
+
+  setTimeout(() => {
+    const adminMsg = `Bonjour ${pseudo.split('#')[0]} ! Commande bien reçue 👍\nJe regarde tout ça et reviens vers toi rapidement !`;
+    addOrderMessage('admin', 'Admin Duck 🦆', adminMsg);
+    newOrder.messages.push({ type: 'admin', author: 'Admin Duck 🦆', text: adminMsg, time: new Date().toISOString() });
+    refreshAdminData();
+  }, 1200);
+
+  cart = [];
+  updateCartUI();
+  const cd = document.getElementById('cart-description');
+  if (cd) cd.value = '';
+
+  refreshAdminData();
+  showToast('Commande créée ! Discussion ouverte 🎉', '🚀');
+  addLog(`Nouvelle commande ${currentOrderId} de ${pseudo}`, '📦');
+  saveOrders();
+
+  // ── WEBHOOK DISCORD : Nouvelle commande ──
+  const servicesText = newOrder.services.map(s => `• **${s.name}**${s.note ? `\n  *"${s.note}"*` : ''}`).join('\n');
+  sendWebhook(WEBHOOK_COMMANDES, {
+    title: '📦 Nouvelle commande reçue !',
+    color: 0x7b5cfa,
+    fields: [
+      { name: '🆔 ID Commande', value: `\`${currentOrderId}\``, inline: true },
+      { name: '👤 Client', value: pseudo, inline: true },
+      { name: '🛒 Services commandés', value: servicesText || '—' },
+    ],
+    footer: { text: 'Duck Dev · Système de commandes' },
+    timestamp: new Date().toISOString()
+  });
+}
+
+// ── PAGE DE COMMANDE ──────────────────────────────────
+function buildOrderPage(pseudo, services) {
+  document.getElementById('order-page-id').textContent = currentOrderId;
+  const recapEl = document.getElementById('order-recap-items');
+  if (recapEl) {
+    recapEl.innerHTML = services.map(item => `
+      <div class="order-service-item">
+        <div class="order-service-item-name">${getServiceIcon(item.name)} ${item.name}</div>
+        ${item.note ? `<div class="order-service-item-note">"${item.note}"</div>` : ''}
+      </div>`).join('');
+  }
+  const rp = document.getElementById('order-recap-pseudo');
+  if (rp) rp.textContent = pseudo;
+  renderProgress();
+  updateStatusBadge();
+  const chatMsgs = document.getElementById('order-chat-messages');
+  if (chatMsgs) chatMsgs.innerHTML = '';
+}
+
+function closeOrderPage() {
+  const el = document.getElementById('order-page');
+  if (el) el.classList.remove('open');
+}
+
+function renderProgress() {
+  const container = document.getElementById('progress-steps');
+  if (!container) return;
+  const now = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  if (orderStatus === 'annule') {
+    container.innerHTML = `<div style="color:#f87171;font-size:0.88rem;padding:8px 0">❌ Cette commande a été annulée.</div>`;
+    return;
+  }
+  const currentStep = STATUS_CONFIG[orderStatus]?.step ?? 0;
+  container.innerHTML = PROGRESS_STEPS.map((s, i) => {
+    const done = i < currentStep;
+    const active = i === currentStep;
+    return `<div class="progress-step ${done ? 'done' : ''} ${active ? 'active' : ''}">
+      <div class="step-dot">${done ? '✓' : s.icon}</div>
+      <div class="step-info">
+        <div class="step-label">${s.label}</div>
+        ${active ? `<div class="step-date">${now}</div>` : ''}
+        ${done ? `<div class="step-date" style="color:var(--violet)">Complété</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setOrderStatus(status) {
+  orderStatus = status;
+  updateStatusBadge();
+  renderProgress();
+  const cfg = STATUS_CONFIG[status];
+  addOrderMessage('system', '', `Statut mis à jour : ${cfg.label}`);
+  showToast(`Statut : ${cfg.label}`, '⚙️');
+  // Sync with allOrders
+  const order = allOrders.find(o => o.id === currentOrderId);
+  if (order) {
+    order.status = status;
+    order.messages.push({ type: 'system', text: `Statut : ${cfg.label}`, time: new Date().toISOString() });
+  }
+  refreshAdminData();
+}
+
+function updateStatusBadge() {
+  const badge = document.getElementById('order-status-badge');
+  if (!badge) return;
+  const cfg = STATUS_CONFIG[orderStatus];
+  badge.textContent = cfg.label;
+  badge.className = `order-page-status-badge ${cfg.cls}`;
+}
+
+function addOrderMessage(type, author, text) {
+  const msgs = document.getElementById('order-chat-messages');
+  if (!msgs) return;
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if (type === 'system') {
+    const el = document.createElement('div');
+    el.className = 'system-msg';
+    el.textContent = text;
+    msgs.appendChild(el);
+  } else {
+    const isUser = type === 'user';
+    const el = document.createElement('div');
+    el.className = `msg ${isUser ? 'msg-user' : 'msg-admin'}`;
+    el.innerHTML = text.replace(/\n/g, '<br>') + `<div class="msg-meta ${isUser ? '' : 'msg-meta-left'}">${author} · ${time}</div>`;
+    msgs.appendChild(el);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+  orderMessages.push({ type, author, text, time: now.toISOString() });
+}
+
+function sendOrderMsg() {
+  const input = document.getElementById('order-chat-input');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const pseudo = document.getElementById('order-recap-pseudo')?.textContent || 'Client';
+  addOrderMessage('user', pseudo, val);
+  input.value = '';
+  // Sync with allOrders
+  const order = allOrders.find(o => o.id === currentOrderId);
+  if (order) order.messages.push({ type: 'user', author: pseudo, text: val, time: new Date().toISOString() });
+
+  const replies = [
+    'Bien noté ! Je m\'en occupe dès que possible 🦆',
+    'Reçu, merci pour les détails !',
+    'Je prends en compte ta remarque.',
+    'Super, je reviens vers toi rapidement avec une mise à jour.',
+    'Pas de souci, c\'est tout à fait faisable ! 👍'
+  ];
+  setTimeout(() => {
+    const reply = replies[Math.floor(Math.random() * replies.length)];
+    addOrderMessage('admin', 'Admin Duck 🦆', reply);
+    if (order) order.messages.push({ type: 'admin', author: 'Admin Duck 🦆', text: reply, time: new Date().toISOString() });
+  }, 900 + Math.random() * 800);
+}
+
+// ── FILTRES CATALOGUE ─────────────────────────────────
+function filterCards(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.service-card[data-cat]').forEach(card => {
+    card.classList.toggle('hidden', cat !== 'all' && card.dataset.cat !== cat);
+  });
+}
+
+// ── PRIORITÉ TICKET ───────────────────────────────────
+let priority = '';
+function setPriority(p) {
+  priority = p;
+  document.querySelectorAll('.priority-btn').forEach(b => b.className = 'priority-btn');
+  const el = document.getElementById('p-' + p);
+  if (el) el.className = 'priority-btn active-' + p;
+}
+
+// ── FORMULAIRE TICKET ─────────────────────────────────
+function submitTicket() {
+  const pseudo = document.getElementById('t-pseudo')?.value.trim();
+  const cat = document.getElementById('t-cat')?.value;
+  const subject = document.getElementById('t-subject')?.value.trim();
+  const desc = document.getElementById('t-desc')?.value.trim();
+  if (!pseudo || !cat || !subject || !desc) { showToast('Remplis tous les champs !', '⚠️'); return; }
+  const id = 'TK-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+  const linkEl = document.getElementById('modal-link-text');
+  if (linkEl) linkEl.textContent = `https://duckdev.fr/ticket/${id}`;
+  const modal = document.getElementById('ticket-modal');
+  if (modal) modal.classList.add('visible');
+}
+
+function closeModal() {
+  const el = document.getElementById('ticket-modal');
+  if (el) el.classList.remove('visible');
+}
+
+function closeContactModal() {
+  const el = document.getElementById('contact-modal');
+  if (el) el.classList.remove('visible');
+}
+
+function copyLink() {
+  const txt = document.getElementById('modal-link-text').textContent;
+  navigator.clipboard.writeText(txt).catch(() => {});
+  const btn = document.querySelector('.modal-copy-btn');
+  if (btn) { btn.textContent = 'Copié !'; setTimeout(() => btn.textContent = 'Copier', 2000); }
+}
+
+// ── FORMULAIRE CONTACT ────────────────────────────────
+function submitContact() {
+  const name = document.getElementById('c-name').value.trim();
+  const discord = document.getElementById('c-discord')?.value.trim() || '—';
+  const subject = document.getElementById('c-subject')?.value.trim() || '—';
+  const msg = document.getElementById('c-msg').value.trim();
+  if (!name || !msg) { showToast('Remplis ton nom et ton message !', '⚠️'); return; }
+  document.getElementById('contact-modal')?.classList.add('visible');
+  ['c-name', 'c-discord', 'c-subject', 'c-msg'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+  // ── WEBHOOK DISCORD : Nouveau message contact ──
+  sendWebhook(WEBHOOK_LOGS, {
+    title: '✉️ Nouveau message de contact !',
+    color: 0x3b82f6,
+    fields: [
+      { name: '👤 Nom', value: name, inline: true },
+      { name: '🎮 Discord', value: discord, inline: true },
+      { name: '📌 Sujet', value: subject, inline: false },
+      { name: '💬 Message', value: msg.length > 1000 ? msg.substring(0, 997) + '...' : msg },
+    ],
+    footer: { text: 'Duck Dev · Formulaire de contact' },
+    timestamp: new Date().toISOString()
+  });
+}
+
+// ── FAQ ───────────────────────────────────────────────
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// ── DEMO CHAT ─────────────────────────────────────────
+function sendDemoMsg() {
+  const input = document.getElementById('demo-chat-input');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const msgs = document.getElementById('demo-messages');
+  if (!msgs) return;
+  const now = new Date();
+  const el = document.createElement('div');
+  el.className = 'msg msg-user';
+  el.innerHTML = `${val}<div class="msg-meta">Vous · ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</div>`;
+  msgs.appendChild(el);
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => {
+    const rs = ['Bien reçu ! 🦆', 'Pas de souci, c\'est faisable !', 'Je prends note !', 'Super idée !'];
+    const r = document.createElement('div');
+    r.className = 'msg msg-admin';
+    r.innerHTML = `${rs[Math.floor(Math.random()*rs.length)]}<div class="msg-meta msg-meta-left">Admin Duck · ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</div>`;
+    msgs.appendChild(r);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 1200);
+}
+
+// ── MODALS OVERLAY ────────────────────────────────────
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('visible'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// ADMIN — LOGIN
+// ═══════════════════════════════════════════════════════
+function openAdminLogin(role) {
+  pendingAdminRole = role;
+  const isFondation = role === 'fondation';
+  const iconEl = document.getElementById('admin-login-icon');
+  const titleEl = document.getElementById('admin-login-title');
+  const subEl = document.getElementById('admin-login-sub');
+  const overlay = document.getElementById('admin-login-overlay');
+  if (iconEl) iconEl.textContent = isFondation ? '👑' : '🛡️';
+  if (titleEl) titleEl.textContent = isFondation ? 'Accès Fondation' : 'Accès Modérateur';
+  if (subEl) subEl.textContent = isFondation
+    ? 'Code secret Fondation — accès complet.'
+    : 'Code secret Modérateur — gestion commandes et discussions.';
+  const pin = document.getElementById('admin-pin-input');
+  if (pin) { pin.value = ''; pin.classList.remove('error'); }
+  // Mettre à jour la UI Discord dans le login
+  updateDiscordUI();
+  if (overlay) overlay.classList.add('visible');
+  setTimeout(() => { const p = document.getElementById('admin-pin-input'); if (p) p.focus(); }, 300);
+}
+
+function closeAdminLogin() {
+  const overlay = document.getElementById('admin-login-overlay');
+  if (overlay) overlay.classList.remove('visible');
+  pendingAdminRole = '';
+}
+
+function checkAdminPin() {
+  const input = document.getElementById('admin-pin-input');
+  if (!input) return;
+  if (!pendingAdminRole) { closeAdminLogin(); return; }
+
+  // Connexion Discord requise
+  if (!discordUser) {
+    showToast('Connecte-toi avec Discord d\'abord !', '⚠️');
+    loginWithDiscord();
+    return;
+  }
+
+  const val = input.value.trim();
+  const expected = ADMIN_CODES[pendingAdminRole];
+  if (expected && val === expected) {
+    const role = pendingAdminRole;
+    closeAdminLogin();
+    openPanel(role);
+    // Afficher le pseudo Discord dans la topbar du panel
+    const name = getDiscordUsername(discordUser);
+    const timeEl = document.getElementById(role === 'fondation' ? 'fondation-time' : 'modo-time');
+    if (timeEl) {
+      const avatarUrl = getDiscordAvatarUrl(discordUser);
+      const avatarHtml = avatarUrl
+        ? `<img src="${avatarUrl}" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--violet);vertical-align:middle;margin-right:5px" onerror="this.style.display='none'">`
+        : `<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--blue));align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;vertical-align:middle;margin-right:5px">${name.charAt(0).toUpperCase()}</span>`;
+      timeEl.innerHTML = avatarHtml + `<strong style="color:var(--text)">${name}</strong>`;
+    }
+    setTimeout(() => addLog(`Connexion panel ${role} — ${name}`, role === 'fondation' ? '👑' : '🛡️'), 100);
+  } else {
+    input.classList.add('error');
+    input.value = '';
+    setTimeout(() => { if (input) input.classList.remove('error'); }, 500);
+    showToast('Code incorrect !', '❌');
+  }
+}
+
+const _pinInput = document.getElementById('admin-pin-input');
+if (_pinInput) _pinInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkAdminPin();
+});
+
+// ── PANEL OPEN/CLOSE ──────────────────────────────────
+function openPanel(role) {
+  const panel = document.getElementById(`panel-${role}`);
+  if (!panel) return;
+  panel.classList.add('open');
+  isAdminLogged = true;
+  // Afficher le panneau statut admin dans la page commande
+  const ap = document.getElementById('order-admin-panel');
+  if (ap) ap.style.display = 'block';
+  if (role === 'fondation') setTimeout(renderServicesMgmt, 150);
+  refreshAdminData();
+}
+
+function closePanel(role) {
+  const panel = document.getElementById(`panel-${role}`);
+  if (panel) panel.classList.remove('open');
+  // Vérifier si un autre panel est encore ouvert
+  const otherRole = role === 'fondation' ? 'moderateur' : 'fondation';
+  const otherPanel = document.getElementById(`panel-${otherRole}`);
+  if (!otherPanel || !otherPanel.classList.contains('open')) {
+    isAdminLogged = false;
+    const ap = document.getElementById('order-admin-panel');
+    if (ap) ap.style.display = 'none';
+  }
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────
+function switchFondationTab(tabId, btn) {
+  document.querySelectorAll('#panel-fondation .admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#panel-fondation .admin-nav-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById(`f-tab-${tabId}`);
+  if (tab) tab.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tabId === 'discussions') renderConvList('fondation');
+  if (tabId === 'commandes') renderOrdersTable('f-orders-tbody');
+  if (tabId === 'logs') renderLogs();
+  if (tabId === 'services-mgmt') renderServicesMgmt();
+}
+
+function switchModoTab(tabId, btn) {
+  document.querySelectorAll('#panel-moderateur .admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#panel-moderateur .admin-nav-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById(`m-tab-${tabId}`);
+  if (tab) tab.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tabId === 'm-discussions') renderConvList('moderateur');
+  if (tabId === 'm-commandes') renderOrdersTable('m-orders-tbody');
+  if (tabId === 'm-tickets') renderTickets();
+}
+
+// ── REFRESH DATA ──────────────────────────────────────
+function refreshAdminData() {
+  const total = allOrders.length;
+  const pending = allOrders.filter(o => o.status === 'attente').length;
+  const inprog = allOrders.filter(o => o.status === 'encours').length;
+  const done = allOrders.filter(o => o.status === 'fini').length;
+  const setBySel = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setBySel('f-stat-orders', total);
+  setBySel('f-stat-pending', pending);
+  setBySel('f-stat-done', done);
+  setBySel('f-stat-revenue', (allOrders.filter(o => o.services.some(s => s.name.includes('Bot'))).length * 10) + '€+');
+  setBySel('m-stat-total', total);
+  setBySel('m-stat-pending', pending);
+  setBySel('m-stat-inprogress', inprog);
+  setBySel('m-stat-done', done);
+  renderRecentOrders();
+}
+
+// ── ORDERS TABLE ──────────────────────────────────────
+function renderOrdersTable(tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const cols = tbodyId === 'f-orders-tbody' ? 6 : 5;
+  if (!allOrders.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:var(--text3);padding:30px">Aucune commande.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allOrders.map(o => `
+    <tr>
+      <td><code style="color:var(--violet2);font-size:0.75rem">${o.id}</code></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${o.discordAvatar
+            ? `<img src="${o.discordAvatar}" style="width:26px;height:26px;border-radius:50%;border:2px solid var(--violet)" onerror="this.style.display='none'">`
+            : `<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0">${(o.pseudo||'?').charAt(0).toUpperCase()}</div>`
+          }
+          <div>
+            <strong style="font-size:0.85rem">${o.pseudo}</strong>
+            ${o.discordId ? `<div style="font-size:0.65rem;color:var(--text3);font-family:monospace">${o.discordId}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td>${o.services.map(s => `<span style="font-size:0.7rem;background:rgba(123,92,250,0.1);border-radius:5px;padding:2px 6px;margin:1px;display:inline-block">${getServiceIcon(s.name)} ${s.name}</span>`).join('')}</td>
+      <td><span class="tbl-badge ${STATUS_CONFIG[o.status]?.cls || ''}">${STATUS_CONFIG[o.status]?.label || o.status}</span></td>
+      ${cols === 6 ? `<td style="font-size:0.75rem;color:var(--text3)">${o.date}</td>` : ''}
+      <td style="white-space:nowrap">
+        <select class="admin-input" style="width:120px;padding:4px 6px;font-size:0.72rem;cursor:pointer;margin-bottom:3px" onchange="updateOrderStatus('${o.id}',this.value)">
+          <option value="attente" ${o.status==='attente'?'selected':''}>⏳ En attente</option>
+          <option value="encours" ${o.status==='encours'?'selected':''}>🔧 En cours</option>
+          <option value="evaluation" ${o.status==='evaluation'?'selected':''}>🔍 Évaluation</option>
+          <option value="fini" ${o.status==='fini'?'selected':''}>✅ Terminé</option>
+          <option value="annule" ${o.status==='annule'?'selected':''}>❌ Annulé</option>
+        </select>
+        <button class="admin-action-btn status-encours" style="font-size:0.75rem;padding:4px 8px" onclick="openConvFromOrder('${o.id}')">💬</button>
+      </td>
+    </tr>`).join('');
+}
+
+function filterOrdersTable(val, tbodyId) {
+  document.getElementById(tbodyId)?.querySelectorAll('tr').forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function updateOrderStatus(orderId, newStatus) {
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+  order.status = newStatus;
+  const cfg = STATUS_CONFIG[newStatus];
+  if (currentOrderId === orderId) {
+    orderStatus = newStatus;
+    updateStatusBadge();
+    renderProgress();
+    addOrderMessage('system', '', `Statut mis à jour : ${cfg.label}`);
+  }
+  order.messages.push({ type: 'system', text: `Statut : ${cfg.label}`, time: new Date().toISOString() });
+  refreshAdminData();
+  renderOrdersTable('f-orders-tbody');
+  renderOrdersTable('m-orders-tbody');
+  showToast(`${orderId} → ${cfg.label}`, '⚙️');
+  addLog(`Statut ${orderId} → ${cfg.label}`, '⚙️');
+  saveOrders();
+}
+
+function renderRecentOrders() {
+  const c = document.getElementById('m-recent-orders');
+  if (!c) return;
+  const recent = allOrders.filter(o => o.status === 'attente' || o.status === 'encours').slice(-5).reverse();
+  if (!recent.length) {
+    c.innerHTML = `<div style="text-align:center;color:var(--text3);padding:20px;font-size:0.85rem">Aucune commande en attente.</div>`;
+    return;
+  }
+  c.innerHTML = recent.map(o => `
+    <div class="order-detail-card">
+      <div class="order-detail-head">
+        <span class="order-detail-id">${o.id}</span>
+        <span class="tbl-badge ${STATUS_CONFIG[o.status]?.cls}">${STATUS_CONFIG[o.status]?.label}</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px">👤 <strong>${o.pseudo}</strong> · ${o.date}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${o.services.map(s => `<span style="font-size:0.72rem;background:rgba(123,92,250,0.1);border-radius:5px;padding:2px 7px">${getServiceIcon(s.name)} ${s.name}</span>`).join('')}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="admin-action-btn status-encours" onclick="updateOrderStatus('${o.id}','encours')">🔧 En charge</button>
+        <button class="admin-action-btn status-fini" onclick="updateOrderStatus('${o.id}','fini')">✅ Terminer</button>
+        <button class="admin-action-btn status-attente" onclick="openConvFromOrder('${o.id}')">💬 Chat</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── CONVERSATIONS ─────────────────────────────────────
+function renderConvList(panel) {
+  const id = panel === 'fondation' ? 'f-conv-list' : 'm-conv-list';
+  const c = document.getElementById(id);
+  if (!c) return;
+  if (!allOrders.length) { c.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.85rem">Aucune discussion.</div>`; return; }
+  c.innerHTML = allOrders.map(o => {
+    const last = o.messages[o.messages.length - 1];
+    return `<div class="admin-conv-item ${activeConvId === o.id ? 'active' : ''}" onclick="openConv('${o.id}','${panel}')">
+      <div class="admin-conv-name">${o.pseudo} <span class="tbl-badge ${STATUS_CONFIG[o.status]?.cls}" style="padding:1px 6px;font-size:0.62rem">${STATUS_CONFIG[o.status]?.label}</span></div>
+      <div class="admin-conv-preview">${last ? last.text.replace(/\n/g,' ').substring(0,45)+'…' : 'Aucun message'}</div>
+      <div class="admin-conv-meta">${o.id} · ${o.date}</div>
+    </div>`;
+  }).join('');
+}
+
+function openConv(orderId, panel) {
+  activeConvId = orderId;
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+  const msgsEl = document.getElementById(panel === 'fondation' ? 'f-chat-msgs' : 'm-chat-msgs');
+  if (!msgsEl) return;
+
+  if (panel === 'moderateur') {
+    const t = document.getElementById('m-chat-conv-title');
+    if (t) t.textContent = `${order.pseudo} — ${order.id}`;
+    const btns = document.getElementById('m-chat-status-btns');
+    if (btns) btns.innerHTML = Object.entries(STATUS_CONFIG).map(([k,v]) =>
+      `<button class="admin-action-btn ${v.cls}" style="font-size:0.67rem;padding:3px 7px" onclick="updateOrderStatus('${orderId}','${k}')">${v.label}</button>`
+    ).join('');
+  }
+
+  msgsEl.style = '';
+  msgsEl.innerHTML = '';
+  order.messages.forEach(m => {
+    if (m.type === 'system') {
+      const el = document.createElement('div'); el.className = 'system-msg'; el.textContent = m.text; msgsEl.appendChild(el);
+    } else {
+      const el = document.createElement('div');
+      el.className = `msg ${m.type === 'user' ? 'msg-user' : 'msg-admin'}`;
+      const t = new Date(m.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      el.innerHTML = m.text.replace(/\n/g, '<br>') + `<div class="msg-meta ${m.type === 'user' ? '' : 'msg-meta-left'}">${m.author} · ${t}</div>`;
+      msgsEl.appendChild(el);
+    }
+  });
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  renderConvList(panel);
+}
+
+function openConvFromOrder(orderId) {
+  const fondPanel = document.getElementById('panel-fondation');
+  const modoPanel = document.getElementById('panel-moderateur');
+  if (fondPanel && fondPanel.classList.contains('open')) {
+    const btn = document.querySelector('#panel-fondation .admin-nav-btn[onclick*="discussions"]');
+    switchFondationTab('discussions', btn);
+    setTimeout(() => openConv(orderId, 'fondation'), 80);
+  } else if (modoPanel && modoPanel.classList.contains('open')) {
+    const btn = document.querySelector('#panel-moderateur .admin-nav-btn[onclick*="m-discussions"]');
+    switchModoTab('m-discussions', btn);
+    setTimeout(() => openConv(orderId, 'moderateur'), 80);
+  }
+}
+
+function sendAdminReply(panel) {
+  if (!activeConvId) { showToast('Sélectionne une discussion !', '⚠️'); return; }
+  const input = document.getElementById(panel === 'fondation' ? 'f-reply-input' : 'm-reply-input');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const order = allOrders.find(o => o.id === activeConvId);
+  if (!order) return;
+  const msgObj = { type: 'admin', author: 'Admin Duck 🦆', text: val, time: new Date().toISOString() };
+  order.messages.push(msgObj);
+  if (currentOrderId === activeConvId) addOrderMessage('admin', 'Admin Duck 🦆', val);
+  openConv(activeConvId, panel);
+  input.value = '';
+  addLog(`Réponse admin sur ${activeConvId}`, '💬');
+  saveOrders();
+}
+
+// ── TICKETS ───────────────────────────────────────────
+function renderTickets() {
+  const c = document.getElementById('m-tickets-list');
+  if (!c) return;
+  if (!allOrders.length) { c.innerHTML = `<div class="settings-card" style="text-align:center;color:var(--text3);font-size:0.85rem;padding:30px">Aucun ticket ouvert.</div>`; return; }
+  c.innerHTML = allOrders.map(o => `
+    <div class="order-detail-card">
+      <div class="order-detail-head"><span class="order-detail-id">🎫 ${o.id}</span><span class="tbl-badge ${STATUS_CONFIG[o.status]?.cls}">${STATUS_CONFIG[o.status]?.label}</span></div>
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:4px">👤 <strong>${o.pseudo}</strong> · ${o.date}</div>
+      <div style="font-size:0.78rem;color:var(--text3)">Services : ${o.services.map(s => s.name).join(', ')}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+        <button class="admin-action-btn status-encours" onclick="openConvFromOrder('${o.id}')">💬 Discussion</button>
+        <button class="admin-action-btn status-fini" onclick="updateOrderStatus('${o.id}','fini')">✅ Clore</button>
+        <button class="admin-action-btn status-annule" onclick="updateOrderStatus('${o.id}','annule')">❌ Annuler</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── SERVICES MGMT ─────────────────────────────────────
+function renderServicesMgmt() {
+  const c = document.getElementById('services-mgmt-list');
+  if (!c) return;
+  const cards = [...document.querySelectorAll('.service-card[data-cat]')];
+  if (!cards.length) { c.innerHTML = `<div style="color:var(--text3);font-size:0.85rem">Aucun service trouvé.</div>`; return; }
+  c.innerHTML = cards.map((card, idx) => {
+    const name = card.querySelector('.card-title')?.textContent || `Service ${idx+1}`;
+    const cat = card.dataset.cat;
+    const badge = card.querySelector('.card-tag')?.textContent || '';
+    const visible = !card.classList.contains('hidden');
+    return `<div class="settings-card" style="margin-bottom:0.8rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div><div style="font-family:'Syne',sans-serif;font-weight:700">${getServiceIcon(name)} ${name}</div>
+        <div style="font-size:0.75rem;color:var(--text3)">${cat} · ${badge}</div></div>
+        <div class="toggle-wrap">
+          <div class="toggle ${visible ? 'on' : ''}" onclick="toggleServiceVisibility(${idx},this)"></div>
+          <span style="font-size:0.75rem;color:var(--text3)" id="svc-vis-${idx}">${visible ? 'Visible' : 'Masqué'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleServiceVisibility(idx, toggle) {
+  const cards = [...document.querySelectorAll('.service-card[data-cat]')];
+  if (!cards[idx]) return;
+  toggle.classList.toggle('on');
+  const on = toggle.classList.contains('on');
+  cards[idx].classList.toggle('hidden', !on);
+  const lbl = document.getElementById(`svc-vis-${idx}`);
+  if (lbl) lbl.textContent = on ? 'Visible' : 'Masqué';
+  showToast(on ? 'Offre visible' : 'Offre masquée', on ? '✅' : '👁️');
+  addLog(`Offre "${cards[idx].querySelector('.card-title')?.textContent}" ${on ? 'affichée' : 'masquée'}`, '🛒');
+}
+
+function addNewService() {
+  const name = document.getElementById('new-service-name').value.trim();
+  const cat = document.getElementById('new-service-cat').value;
+  const price = document.getElementById('new-service-price').value.trim();
+  const badge = document.getElementById('new-service-badge').value;
+  const desc = document.getElementById('new-service-desc').value.trim();
+  if (!name || !desc) { showToast('Remplis nom et description !', '⚠️'); return; }
+  const tagMap = { free: 'tag-free', paid: 'tag-paid', devis: 'tag-devis' };
+  const badgeLabel = { free: 'Gratuit', paid: 'Payant', devis: 'Sur devis' };
+  const iconMap = { discord: '🤖', web: '🌐', server: '🖥️', design: '🎨' };
+  const grid = document.querySelector('.services-grid');
+  const card = document.createElement('div');
+  card.className = 'service-card visible';
+  card.dataset.cat = cat;
+  card.innerHTML = `<div class="card-icon" style="background:linear-gradient(135deg,rgba(123,92,250,0.15),rgba(59,130,246,0.1))">${iconMap[cat] || '📦'}</div>
+    <span class="card-tag ${tagMap[badge]}">${badgeLabel[badge]}</span>
+    <div class="card-title">${name}</div>
+    <div class="card-desc">${desc}</div>
+    <div class="card-price">${price || 'Sur devis'}</div><br>
+    <button class="card-btn" onclick="openOrder('${name}',this)">Commander ce service</button>`;
+  grid.appendChild(card);
+  document.getElementById('new-service-name').value = '';
+  document.getElementById('new-service-price').value = '';
+  document.getElementById('new-service-desc').value = '';
+  showToast(`"${name}" ajoutée !`, '✅');
+  addLog(`Offre ajoutée : ${name}`, '🛒');
+  renderServicesMgmt();
+}
+
+// ── SITE SETTINGS ─────────────────────────────────────
+function applySiteTexts() {
+  const t = document.getElementById('site-hero-title')?.value;
+  const s = document.getElementById('site-hero-sub')?.value;
+  const b = document.getElementById('site-badge-text')?.value;
+  if (t) { const el = document.querySelector('.hero-title'); if (el) el.innerHTML = `${t}<br><span class="gradient-text">sans compromis</span>`; }
+  if (s) { const el = document.querySelector('.hero-sub'); if (el) el.textContent = s; }
+  if (b) { const el = document.querySelector('.hero-badge'); if (el) el.innerHTML = `<span class="dot"></span>${b}`; }
+  showToast('Textes mis à jour !', '✅');
+  addLog('Textes hero modifiés', '🌐');
+}
+
+function applyStats() {
+  const vals = ['stat-projects', 'stat-clients', 'stat-response'].map(id => document.getElementById(id)?.value);
+  const nums = [...document.querySelectorAll('.stat-num[data-target]')];
+  if (nums[0] && vals[0]) { nums[0].dataset.target = vals[0]; nums[0].textContent = vals[0] + '+'; }
+  if (nums[1] && vals[1]) { nums[1].dataset.target = vals[1]; nums[1].textContent = vals[1] + '+'; }
+  if (nums[2] && vals[2]) { nums[2].dataset.target = vals[2]; nums[2].textContent = vals[2] + 'h'; }
+  showToast('Stats mises à jour !', '📊');
+  addLog('Stats modifiées', '📊');
+}
+
+function applyTheme(theme, swatch) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  swatch.classList.add('selected');
+  const themes = {
+    'violet-blue':  ['#7b5cfa', '#3b82f6', 'rgba(123,92,250,0.35)'],
+    'pink-violet':  ['#e040fb', '#7b5cfa', 'rgba(224,64,251,0.35)'],
+    'cyan-blue':    ['#06b6d4', '#3b82f6', 'rgba(6,182,212,0.35)'],
+    'green-blue':   ['#10b981', '#3b82f6', 'rgba(16,185,129,0.35)'],
+    'orange-red':   ['#f59e0b', '#ef4444', 'rgba(245,158,11,0.35)']
+  };
+  const [v, b, g] = themes[theme] || themes['violet-blue'];
+  document.documentElement.style.setProperty('--violet', v);
+  document.documentElement.style.setProperty('--blue', b);
+  document.documentElement.style.setProperty('--glow', g);
+  showToast('Thème appliqué !', '🎨');
+  addLog(`Thème : ${theme}`, '🎨');
+}
+
+// ── MAINTENANCE ───────────────────────────────────────
+function toggleMaintenance(toggle) {
+  toggle.classList.toggle('on');
+  const on = toggle.classList.contains('on');
+  document.getElementById('maintenance-banner')?.classList.toggle('visible', on);
+  const lbl = document.getElementById('maintenance-status-label');
+  if (lbl) lbl.textContent = on ? 'Actif' : 'Inactif';
+  showToast(on ? '⚠️ Maintenance activée' : 'Maintenance désactivée', on ? '🔧' : '✅');
+  addLog(on ? 'Maintenance ACTIVÉE' : 'Maintenance désactivée', '🔧');
+}
+
+function applyMaintenanceMsg() {
+  const msg = document.getElementById('maintenance-msg')?.value;
+  const banner = document.getElementById('maintenance-banner');
+  if (msg && banner) { banner.textContent = msg; showToast('Message mis à jour !', '✅'); }
+}
+
+function confirmDanger(msg) {
+  if (confirm(`⚠️ ${msg}\nCette action est irréversible !`)) {
+    if (msg.includes('commandes')) { allOrders = []; saveOrders(); refreshAdminData(); showToast('Commandes vidées !', '🗑️'); addLog('Commandes supprimées', '🗑️'); }
+    else { showToast('Cache vidé !', '🔄'); addLog('Cache vidé', '🔄'); }
+  }
+}
+
+// ── ANNOUNCEMENTS ─────────────────────────────────────
+function saveAnnonce() {
+  const text = document.getElementById('f-annonce')?.value?.trim();
+  if (!text) return;
+  const p = document.getElementById('f-annonce-preview');
+  if (p) { p.textContent = '📢 ' + text; p.style.display = 'block'; }
+  showToast('Annonce publiée !', '📢');
+  addLog(`Annonce : "${text.substring(0, 30)}..."`, '📢');
+}
+
+function clearAnnonce() {
+  const el = document.getElementById('f-annonce'); if (el) el.value = '';
+  const p = document.getElementById('f-annonce-preview'); if (p) p.style.display = 'none';
+  showToast('Annonce effacée', '🗑️');
+}
+
+// ── TEAM ──────────────────────────────────────────────
+function addModerator() {
+  const pseudo = document.getElementById('new-modo-pseudo')?.value?.trim();
+  if (!pseudo) return;
+  const tbody = document.querySelector('#f-tab-equipe table tbody');
+  if (tbody) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><strong>${pseudo}</strong></td><td><span class="tbl-badge status-encours">Modérateur</span></td><td>0</td><td><span class="tbl-badge status-fini">Actif</span></td><td><button class="admin-action-btn status-annule" onclick="this.closest('tr').remove();showToast('Suspendu','⚠️')">Suspendre</button></td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('new-modo-pseudo').value = '';
+  showToast(`${pseudo} ajouté !`, '👥');
+  addLog(`Modérateur ajouté : ${pseudo}`, '👥');
+}
+
+// ── LOGS ──────────────────────────────────────────────
+const activityLogs = [];
+// Actions importantes qui méritent un webhook Discord
+const WEBHOOK_LOG_ACTIONS = ['Connexion', 'Maintenance', 'commandes supprimées', 'Offre ajoutée', 'Modérateur ajouté'];
+
+function addLog(msg, icon = '📋') {
+  const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  activityLogs.unshift({ msg, icon, time: now });
+  renderLogs();
+
+  // ── WEBHOOK DISCORD : Log d'activité (seulement les actions importantes) ──
+  const isImportant = WEBHOOK_LOG_ACTIONS.some(kw => msg.toLowerCase().includes(kw.toLowerCase()));
+  if (isImportant) {
+    sendWebhook(WEBHOOK_LOGS, {
+      title: `${icon} Log d'activité`,
+      description: msg,
+      color: 0x221e3a,
+      footer: { text: `Duck Dev · ${now}` },
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+function renderLogs() {
+  const c = document.getElementById('f-logs-list');
+  if (!c) return;
+  if (!activityLogs.length) { c.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.85rem">Aucun log.</div>`; return; }
+  c.innerHTML = activityLogs.slice(0, 60).map(l => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border2);margin-bottom:4px">
+      <span>${l.icon}</span>
+      <span style="flex:1;font-size:0.8rem;color:var(--text2)">${l.msg}</span>
+      <span style="font-size:0.7rem;color:var(--text3);font-family:monospace">${l.time}</span>
+    </div>`).join('');
+}
+
+// ── PERSISTANCE COMMANDES (localStorage) ──────────────
+function saveOrders() {
+  try { localStorage.setItem('duckdev_orders', JSON.stringify(allOrders)); } catch(e) {}
+}
+
+function loadOrders() {
+  try {
+    const raw = localStorage.getItem('duckdev_orders');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        allOrders = parsed;
+        refreshAdminData();
+      }
+    }
+  } catch(e) {}
+}
+
+// Sync en temps réel entre onglets
+window.addEventListener('storage', (e) => {
+  if (e.key === 'duckdev_orders') {
+    try {
+      const parsed = JSON.parse(e.newValue);
+      if (Array.isArray(parsed)) {
+        allOrders = parsed;
+        refreshAdminData();
+        renderOrdersTable('f-orders-tbody');
+        renderOrdersTable('m-orders-tbody');
+        renderConvList('fondation');
+        renderConvList('moderateur');
+        showToast('Nouvelle commande reçue ! 📦', '🔔');
+      }
+    } catch(e) {}
+  }
+});
+
+// Charger les commandes au démarrage
+loadOrders();
+function updateAdminClocks() {
+  const fmt = new Date().toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const el1 = document.getElementById('fondation-time');
+  const el2 = document.getElementById('modo-time');
+  if (el1) el1.textContent = fmt;
+  if (el2) el2.textContent = fmt;
+}
+setInterval(updateAdminClocks, 1000);
+updateAdminClocks();
+</script>
+
+</body>
+</html>

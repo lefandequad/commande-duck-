@@ -5,6 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Duck Dev — Studio de Développement</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, push, onValue, set, update, remove, get, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBq1XemsAZsZRKW1KYsVqFrMy7iqscfpms",
+    authDomain: "duck-dev-3c0d0.firebaseapp.com",
+    projectId: "duck-dev-3c0d0",
+    storageBucket: "duck-dev-3c0d0.firebasestorage.app",
+    messagingSenderId: "512725840890",
+    appId: "1:512725840890:web:70c7323bbda28ef95caa43",
+    measurementId: "G-P1YNXF76HZ",
+    databaseURL: "https://duck-dev-3c0d0-default-rtdb.firebaseio.com"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const rtdb  = getDatabase(fbApp);
+
+  window._fb = { rtdb, ref, push, onValue, set, update, remove, get, serverTimestamp };
+  window._fbReady = true;
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
   :root {
     --bg: #07060f;
@@ -1832,6 +1855,48 @@
   .order-detail-id { font-family:'Syne',sans-serif; font-size:0.95rem; font-weight:700; }
 
   /* ─── DISCORD AUTH ─── */
+  .nav-order-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 10px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 15px var(--glow);
+    animation: pulseBtn 2s ease-in-out infinite;
+  }
+  .nav-order-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  @keyframes pulseBtn {
+    0%, 100% { box-shadow: 0 4px 15px var(--glow); }
+    50% { box-shadow: 0 4px 25px rgba(123,92,250,0.6); }
+  }
+
+  .order-status-banner {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    z-index: 7000;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    max-width: 320px;
+  }
+  .order-status-banner.visible { transform: translateY(0); opacity: 1; }
+  .order-status-banner-info { flex: 1; }
+  .order-status-banner-id { font-size: 0.7rem; color: var(--text3); font-family: monospace; }
+  .order-status-banner-status { font-size: 0.85rem; font-weight: 600; margin-top: 2px; }
+  .order-status-banner-btn {
+    background: linear-gradient(135deg, var(--violet), var(--blue));
+    border: none; border-radius: 8px;
+    color: #fff; font-size: 0.78rem; font-weight: 600;
+    padding: 7px 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
   .discord-login-btn {
     display: inline-flex; align-items: center; gap: 10px;
     padding: 11px 22px;
@@ -1877,7 +1942,63 @@
     cursor: pointer; padding: 2px 6px;
     border-radius: 6px; transition: all 0.2s;
   }
-  .nav-logout-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+  .nav-right {
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .nav-discord-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    background: #5865F2;
+    border: none; border-radius: 8px;
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(88,101,242,0.35);
+    white-space: nowrap;
+  }
+  .nav-discord-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .nav-admin-menu {
+    position: relative;
+  }
+  .nav-admin-toggle {
+    width: 38px; height: 38px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-admin-toggle:hover { border-color: var(--violet); background: rgba(123,92,250,0.1); }
+  .nav-admin-dropdown {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 180px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    display: none;
+    flex-direction: column; gap: 4px;
+    z-index: 2000;
+  }
+  .nav-admin-dropdown.open { display: flex; }
+  .nav-admin-dropdown button {
+    background: none; border: none;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500;
+    padding: 8px 12px; border-radius: 8px;
+    cursor: pointer; text-align: left;
+    transition: all 0.15s;
+  }
+  .nav-admin-dropdown button:hover { background: rgba(123,92,250,0.12); color: var(--text); }
+
+  @media (max-width: 768px) {
+    .nav-right { gap: 0.35rem; }
+    .nav-cta { display: none; }
+  }
 
   .admin-discord-info {
     display: flex; align-items: center; gap: 10px;
@@ -1920,37 +2041,49 @@
     <li><a onclick="scrollTo('contact')">Contact</a></li>
   </ul>
 
-  <!-- Zone utilisateur Discord -->
-  <div id="nav-user-zone" style="display:flex;align-items:center;gap:0.5rem">
-    <!-- Non connecté -->
-    <div id="nav-guest">
-      <button class="discord-login-btn" style="padding:6px 14px;font-size:0.8rem;width:auto" onclick="loginWithDiscord()">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-        Connexion Discord
-      </button>
-    </div>
-    <!-- Connecté -->
-    <div id="nav-logged" style="display:none">
-      <div class="nav-user-badge">
-        <div class="nav-user-avatar-placeholder" id="nav-avatar-placeholder">?</div>
-        <img id="nav-avatar-img" class="nav-user-avatar" style="display:none" alt="avatar">
-        <span id="nav-username">—</span>
-        <button class="nav-logout-btn" onclick="logoutDiscord()" title="Déconnexion">✕</button>
+  <div class="nav-right">
+    <!-- Bouton Ma commande (si commande active) -->
+    <button id="nav-order-btn" class="nav-order-btn" onclick="reopenMyOrder()" style="display:none">
+      📦 Ma commande
+    </button>
+
+    <!-- Zone utilisateur Discord -->
+    <div id="nav-user-zone">
+      <!-- Non connecté -->
+      <div id="nav-guest">
+        <button class="nav-discord-btn" onclick="loginWithDiscord()">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+          Connexion
+        </button>
+      </div>
+      <!-- Connecté -->
+      <div id="nav-logged" style="display:none;align-items:center;gap:0.5rem">
+        <div class="nav-user-badge">
+          <div class="nav-user-avatar-placeholder" id="nav-avatar-placeholder">?</div>
+          <img id="nav-avatar-img" class="nav-user-avatar" style="display:none" alt="avatar">
+          <span id="nav-username">—</span>
+          <button class="nav-logout-btn" onclick="logoutDiscord()" title="Déconnexion">✕</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <button class="nav-cart-btn" onclick="toggleCart()" title="Panier">
-    🛒
-    <span class="cart-badge" id="cart-badge">0</span>
-  </button>
-  <button class="nav-cart-btn" onclick="openAdminLogin('fondation')" title="Panel Fondation" style="font-size:0.8rem;width:auto;padding:0 12px;gap:5px">
-    👑 <span style="font-size:0.75rem;font-weight:600">Admin</span>
-  </button>
-  <button class="nav-cart-btn" onclick="openAdminLogin('moderateur')" title="Panel Modérateur" style="font-size:0.8rem;width:auto;padding:0 12px;gap:5px">
-    🛡️ <span style="font-size:0.75rem;font-weight:600">Modo</span>
-  </button>
-  <button class="nav-cta" onclick="scrollTo('services')">Commander →</button>
+    <!-- Panier -->
+    <button class="nav-cart-btn" onclick="toggleCart()" title="Panier">
+      🛒
+      <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+
+    <!-- Menu admin discret -->
+    <div class="nav-admin-menu">
+      <button class="nav-admin-toggle" onclick="toggleAdminMenu()" title="Accès équipe">⚙️</button>
+      <div class="nav-admin-dropdown" id="nav-admin-dropdown">
+        <button onclick="openAdminLogin('fondation');toggleAdminMenu()">👑 Panel Fondation</button>
+        <button onclick="openAdminLogin('moderateur');toggleAdminMenu()">🛡️ Panel Modérateur</button>
+      </div>
+    </div>
+
+    <button class="nav-cta" onclick="scrollTo('services')">Commander →</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -3078,7 +3211,7 @@ function updateDiscordUI() {
 
     // Navbar
     if (guestEl) guestEl.style.display = 'none';
-    if (loggedEl) loggedEl.style.display = 'block';
+    if (loggedEl) { loggedEl.style.display = 'flex'; }
     if (usernameEl) usernameEl.textContent = name;
     if (avatarUrl && avatarImg) {
       avatarImg.src = avatarUrl;
@@ -3100,6 +3233,9 @@ function updateDiscordUI() {
     if (adminInfo) adminInfo.style.display = 'flex';
     if (adminLoginUsername) adminLoginUsername.textContent = name;
     if (adminLoginAvatar) adminLoginAvatar.textContent = initials;
+
+    // Chercher commande active
+    loadMyActiveOrder();
 
   } else {
     // Non connecté
@@ -3351,6 +3487,14 @@ function validateCart() {
     return;
   }
 
+  // Bloquer si commande déjà en cours
+  if (currentOrderId) {
+    showToast('Tu as déjà une commande en cours !', '⚠️');
+    document.getElementById('cart-panel')?.classList.remove('open');
+    reopenMyOrder();
+    return;
+  }
+
   const pseudo = getDiscordUsername(discordUser);
   const discordId = discordUser.id;
 
@@ -3371,17 +3515,26 @@ function validateCart() {
   buildOrderPage(pseudo, [...cart]);
   document.getElementById('order-page')?.classList.add('open');
 
-  const servicesList = cart.map(i => `• ${i.name}${i.note ? ` — "${i.note}"` : ''}`).join('\n');
-  const autoMsg = `Bonjour ! Voici ma commande :\n\n${servicesList}\n\nPseudo Discord : ${pseudo}`;
-  addOrderMessage('user', pseudo, autoMsg);
-  newOrder.messages.push({ type: 'user', author: pseudo, text: autoMsg, time: new Date().toISOString() });
+  // Lancer le listener chat immédiatement
+  const chatEl = document.getElementById('order-chat-messages');
+  listenChat(currentOrderId, (msgs) => renderChatMessages(msgs, chatEl, pseudo), 'client');
 
-  setTimeout(() => {
-    const adminMsg = `Bonjour ${pseudo.split('#')[0]} ! Commande bien reçue 👍\nJe regarde tout ça et reviens vers toi rapidement !`;
-    addOrderMessage('admin', 'Admin Duck 🦆', adminMsg);
-    newOrder.messages.push({ type: 'admin', author: 'Admin Duck 🦆', text: adminMsg, time: new Date().toISOString() });
-    refreshAdminData();
-  }, 1200);
+  const autoMsg = `Bonjour ! Voici ma commande :\n\n${cart.map(i => `• ${i.name}${i.note ? ` — "${i.note}"` : ''}`).join('\n')}\n\nPseudo Discord : ${pseudo}`;
+
+  // 1. Sauvegarder commande dans Realtime DB
+  saveOrderToFirebase(newOrder).then(() => {
+    // 2. Une fois sauvegardée, envoyer les messages
+    sendChatMessage(currentOrderId, 'user', pseudo, autoMsg, getDiscordAvatarUrl(discordUser));
+    setTimeout(() => {
+      const adminMsg = `Bonjour ${pseudo.split('#')[0]} ! Commande bien reçue 👍\nJe regarde tout ça et reviens vers toi rapidement !`;
+      sendChatMessage(currentOrderId, 'admin', 'Admin Duck 🦆', adminMsg, null);
+      refreshAdminData();
+    }, 1200);
+  });
+
+  // 3. Afficher bandeau et bouton navbar
+  updateNavOrderBtn(newOrder);
+  updateOrderBanner(newOrder);
 
   cart = [];
   updateCartUI();
@@ -3423,8 +3576,8 @@ function buildOrderPage(pseudo, services) {
   if (rp) rp.textContent = pseudo;
   renderProgress();
   updateStatusBadge();
-  const chatMsgs = document.getElementById('order-chat-messages');
-  if (chatMsgs) chatMsgs.innerHTML = '';
+  const chatEl = document.getElementById('order-chat-messages');
+  if (chatEl) chatEl.innerHTML = '';
 }
 
 function closeOrderPage() {
@@ -3460,14 +3613,12 @@ function setOrderStatus(status) {
   updateStatusBadge();
   renderProgress();
   const cfg = STATUS_CONFIG[status];
-  addOrderMessage('system', '', `Statut mis à jour : ${cfg.label}`);
   showToast(`Statut : ${cfg.label}`, '⚙️');
-  // Sync with allOrders
   const order = allOrders.find(o => o.id === currentOrderId);
-  if (order) {
-    order.status = status;
-    order.messages.push({ type: 'system', text: `Statut : ${cfg.label}`, time: new Date().toISOString() });
-  }
+  if (order) order.status = status;
+  // Sync Firebase
+  updateOrderInFirebase(currentOrderId, { status });
+  sendChatMessage(currentOrderId, 'system', '', `Statut mis à jour : ${cfg.label}`, null);
   refreshAdminData();
 }
 
@@ -3506,27 +3657,23 @@ function sendOrderMsg() {
   const val = input.value.trim();
   if (!val) return;
   const pseudo = document.getElementById('order-recap-pseudo')?.textContent || 'Client';
-  addOrderMessage('user', pseudo, val);
+  // Envoyer dans Realtime DB — le listener mettra à jour l'UI automatiquement
+  sendChatMessage(currentOrderId, 'user', pseudo, val, getDiscordAvatarUrl(discordUser));
   input.value = '';
-  // Sync with allOrders
-  const order = allOrders.find(o => o.id === currentOrderId);
-  if (order) order.messages.push({ type: 'user', author: pseudo, text: val, time: new Date().toISOString() });
-
-  const replies = [
-    'Bien noté ! Je m\'en occupe dès que possible 🦆',
-    'Reçu, merci pour les détails !',
-    'Je prends en compte ta remarque.',
-    'Super, je reviens vers toi rapidement avec une mise à jour.',
-    'Pas de souci, c\'est tout à fait faisable ! 👍'
-  ];
-  setTimeout(() => {
-    const reply = replies[Math.floor(Math.random() * replies.length)];
-    addOrderMessage('admin', 'Admin Duck 🦆', reply);
-    if (order) order.messages.push({ type: 'admin', author: 'Admin Duck 🦆', text: reply, time: new Date().toISOString() });
-  }, 900 + Math.random() * 800);
 }
 
 // ── FILTRES CATALOGUE ─────────────────────────────────
+function toggleAdminMenu() {
+  const dd = document.getElementById('nav-admin-dropdown');
+  if (dd) dd.classList.toggle('open');
+}
+// Fermer le menu admin en cliquant ailleurs
+document.addEventListener('click', (e) => {
+  const menu = document.querySelector('.nav-admin-menu');
+  const dd = document.getElementById('nav-admin-dropdown');
+  if (dd && menu && !menu.contains(e.target)) dd.classList.remove('open');
+});
+
 function filterCards(cat, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -3832,15 +3979,16 @@ function updateOrderStatus(orderId, newStatus) {
     orderStatus = newStatus;
     updateStatusBadge();
     renderProgress();
-    addOrderMessage('system', '', `Statut mis à jour : ${cfg.label}`);
   }
-  order.messages.push({ type: 'system', text: `Statut : ${cfg.label}`, time: new Date().toISOString() });
+  // Sync Firestore
+  updateOrderInFirebase(orderId, { status: newStatus });
+  // Message système dans Realtime DB
+  sendChatMessage(orderId, 'system', '', `Statut mis à jour : ${cfg.label}`, null);
   refreshAdminData();
   renderOrdersTable('f-orders-tbody');
   renderOrdersTable('m-orders-tbody');
   showToast(`${orderId} → ${cfg.label}`, '⚙️');
   addLog(`Statut ${orderId} → ${cfg.label}`, '⚙️');
-  saveOrders();
 }
 
 function renderRecentOrders() {
@@ -3900,19 +4048,13 @@ function openConv(orderId, panel) {
   }
 
   msgsEl.style = '';
-  msgsEl.innerHTML = '';
-  order.messages.forEach(m => {
-    if (m.type === 'system') {
-      const el = document.createElement('div'); el.className = 'system-msg'; el.textContent = m.text; msgsEl.appendChild(el);
-    } else {
-      const el = document.createElement('div');
-      el.className = `msg ${m.type === 'user' ? 'msg-user' : 'msg-admin'}`;
-      const t = new Date(m.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      el.innerHTML = m.text.replace(/\n/g, '<br>') + `<div class="msg-meta ${m.type === 'user' ? '' : 'msg-meta-left'}">${m.author} · ${t}</div>`;
-      msgsEl.appendChild(el);
-    }
-  });
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+  msgsEl.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:0.8rem;padding:20px">Chargement...</div>';
+
+  // Écouter le chat en temps réel via Realtime DB
+  listenChat(orderId, (msgs) => {
+    renderChatMessages(msgs, msgsEl, order.pseudo);
+  }, panel);
+
   renderConvList(panel);
 }
 
@@ -3936,14 +4078,13 @@ function sendAdminReply(panel) {
   if (!input) return;
   const val = input.value.trim();
   if (!val) return;
-  const order = allOrders.find(o => o.id === activeConvId);
-  if (!order) return;
-  const msgObj = { type: 'admin', author: 'Admin Duck 🦆', text: val, time: new Date().toISOString() };
-  order.messages.push(msgObj);
-  if (currentOrderId === activeConvId) addOrderMessage('admin', 'Admin Duck 🦆', val);
-  openConv(activeConvId, panel);
+  const adminName = discordUser ? getDiscordUsername(discordUser) : 'Admin Duck 🦆';
+  const adminAvatar = discordUser ? getDiscordAvatarUrl(discordUser) : null;
+  // Envoyer dans Realtime DB
+  sendChatMessage(activeConvId, 'admin', adminName, val, adminAvatar);
   input.value = '';
   addLog(`Réponse admin sur ${activeConvId}`, '💬');
+  // Mettre à jour Firestore statut si nécessaire
   saveOrders();
 }
 
@@ -4089,7 +4230,17 @@ function applyMaintenanceMsg() {
 
 function confirmDanger(msg) {
   if (confirm(`⚠️ ${msg}\nCette action est irréversible !`)) {
-    if (msg.includes('commandes')) { allOrders = []; saveOrders(); refreshAdminData(); showToast('Commandes vidées !', '🗑️'); addLog('Commandes supprimées', '🗑️'); }
+    if (msg.includes('commandes')) {
+      allOrders = [];
+      // Supprimer dans Firestore
+      if (window._fb) {
+        const { db, collection, onSnapshot, doc, updateDoc } = window._fb;
+        allOrders.forEach(o => updateOrderInFirebase(o.id, { status: 'annule' }));
+      }
+      refreshAdminData();
+      showToast('Commandes vidées !', '🗑️');
+      addLog('Commandes supprimées', '🗑️');
+    }
     else { showToast('Cache vidé !', '🔄'); addLog('Cache vidé', '🔄'); }
   }
 }
@@ -4160,44 +4311,212 @@ function renderLogs() {
     </div>`).join('');
 }
 
-// ── PERSISTANCE COMMANDES (localStorage) ──────────────
-function saveOrders() {
-  try { localStorage.setItem('duckdev_orders', JSON.stringify(allOrders)); } catch(e) {}
+// ── COMMANDE ACTIVE CLIENT ────────────────────────────
+
+async function loadMyActiveOrder() {
+  if (!discordUser) return;
+  fbReady(() => {
+    const { rtdb, ref, onValue } = window._fb;
+    onValue(ref(rtdb, 'orders'), (snapshot) => {
+      let activeOrder = null;
+      snapshot.forEach(child => {
+        const o = child.val();
+        if (o.discordId === discordUser.id && ['attente','encours','evaluation'].includes(o.status)) {
+          activeOrder = o;
+        }
+      });
+      if (activeOrder) {
+        currentOrderId = activeOrder.id;
+        orderStatus = activeOrder.status;
+        updateNavOrderBtn(activeOrder);
+        updateOrderBanner(activeOrder);
+        const orderPage = document.getElementById('order-page');
+        if (orderPage && orderPage.classList.contains('open')) {
+          updateStatusBadge();
+          renderProgress();
+        }
+      } else if (currentOrderId) {
+        snapshot.forEach(child => {
+          const o = child.val();
+          if (o.id === currentOrderId && (o.status === 'fini' || o.status === 'annule')) {
+            hideOrderBanner(); hideNavOrderBtn();
+            orderStatus = o.status; updateStatusBadge(); renderProgress();
+            showToast(o.status === 'fini' ? 'Commande terminée ! 🎉' : 'Commande annulée ❌', o.status === 'fini' ? '✅' : '❌');
+            currentOrderId = '';
+          }
+        });
+      }
+    });
+  });
 }
 
-function loadOrders() {
+function updateNavOrderBtn(order) {
+  const btn = document.getElementById('nav-order-btn');
+  if (btn) btn.style.display = 'flex';
+}
+function hideNavOrderBtn() {
+  const btn = document.getElementById('nav-order-btn');
+  if (btn) btn.style.display = 'none';
+}
+function updateOrderBanner(order) {
+  const banner = document.getElementById('order-status-banner');
+  if (!banner) return;
+  const cfg = STATUS_CONFIG[order.status];
+  const idEl = document.getElementById('order-banner-id');
+  const statusEl = document.getElementById('order-banner-status');
+  const iconEl = document.getElementById('order-banner-icon');
+  if (idEl) idEl.textContent = order.id;
+  if (statusEl) statusEl.textContent = cfg?.label || order.status;
+  if (iconEl) iconEl.textContent = cfg?.label?.split(' ')[0] || '📦';
+  banner.classList.add('visible');
+}
+function hideOrderBanner() {
+  const banner = document.getElementById('order-status-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+async function reopenMyOrder() {
+  if (!currentOrderId || !discordUser || !window._fb) return;
+  const { rtdb, ref, get } = window._fb;
   try {
-    const raw = localStorage.getItem('duckdev_orders');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        allOrders = parsed;
-        refreshAdminData();
-      }
-    }
-  } catch(e) {}
+    const snap = await get(ref(rtdb, 'orders/' + currentOrderId));
+    if (!snap.exists()) { showToast('Commande introuvable', '❌'); return; }
+    const order = snap.val();
+    orderStatus = order.status;
+    buildOrderPage(order.pseudo, order.services);
+    document.getElementById('order-page')?.classList.add('open');
+    const chatEl = document.getElementById('order-chat-messages');
+    listenChat(currentOrderId, (msgs) => renderChatMessages(msgs, chatEl, order.pseudo), 'client');
+  } catch(e) { showToast('Erreur de chargement', '❌'); }
 }
 
-// Sync en temps réel entre onglets
-window.addEventListener('storage', (e) => {
-  if (e.key === 'duckdev_orders') {
-    try {
-      const parsed = JSON.parse(e.newValue);
-      if (Array.isArray(parsed)) {
-        allOrders = parsed;
-        refreshAdminData();
-        renderOrdersTable('f-orders-tbody');
-        renderOrdersTable('m-orders-tbody');
-        renderConvList('fondation');
-        renderConvList('moderateur');
-        showToast('Nouvelle commande reçue ! 📦', '🔔');
-      }
-    } catch(e) {}
-  }
-});
+// ── FIREBASE (Realtime Database uniquement) ────────────
 
-// Charger les commandes au démarrage
-loadOrders();
+async function saveOrderToFirebase(order) {
+  return new Promise((resolve) => {
+    fbReady(async () => {
+      const { rtdb, ref, set } = window._fb;
+      try {
+        await set(ref(rtdb, 'orders/' + order.id), {
+          id: order.id, pseudo: order.pseudo, discordId: order.discordId,
+          discordAvatar: order.discordAvatar || null, services: order.services,
+          status: order.status, date: order.date, createdAt: Date.now()
+        });
+      } catch(e) { console.warn('[Firebase] saveOrder:', e); }
+      resolve();
+    });
+  });
+}
+
+async function updateOrderInFirebase(orderId, data) {
+  if (!window._fb) return;
+  const { rtdb, ref, update } = window._fb;
+  try { await update(ref(rtdb, 'orders/' + orderId), data); }
+  catch(e) { console.warn('[Firebase] updateOrder:', e); }
+}
+
+function subscribeOrders() {
+  if (!window._fb) return;
+  const { rtdb, ref, onValue } = window._fb;
+  onValue(ref(rtdb, 'orders'), (snapshot) => {
+    const remoteOrders = [];
+    snapshot.forEach(child => remoteOrders.push(child.val()));
+    remoteOrders.forEach(remote => {
+      const local = allOrders.find(o => o.id === remote.id);
+      if (!local) { allOrders.push({ ...remote, messages: [] }); }
+      else { local.status = remote.status; local.pseudo = remote.pseudo; }
+      if (discordUser && remote.discordId === discordUser.id && remote.id === currentOrderId) {
+        const isDone = remote.status === 'fini' || remote.status === 'annule';
+        if (isDone) {
+          hideOrderBanner(); hideNavOrderBtn();
+          orderStatus = remote.status; updateStatusBadge(); renderProgress();
+          showToast(remote.status === 'fini' ? 'Commande terminée ! 🎉' : 'Commande annulée', remote.status === 'fini' ? '✅' : '❌');
+          currentOrderId = '';
+        } else { updateOrderBanner(remote); orderStatus = remote.status; updateStatusBadge(); renderProgress(); }
+      }
+    });
+    refreshAdminData();
+    renderOrdersTable('f-orders-tbody');
+    renderOrdersTable('m-orders-tbody');
+    renderConvList('fondation');
+    renderConvList('moderateur');
+    const prev = parseInt(sessionStorage.getItem('ordersCount') || '0');
+    if (remoteOrders.length > prev && prev > 0) showToast('Nouvelle commande reçue ! 📦', '🔔');
+    sessionStorage.setItem('ordersCount', remoteOrders.length);
+  }, (err) => console.warn('[Firebase] subscribeOrders:', err));
+}
+
+async function sendChatMessage(orderId, type, author, text, avatarUrl) {
+  fbReady(async () => {
+    const { rtdb, ref, push } = window._fb;
+    try {
+      await push(ref(rtdb, 'chats/' + orderId), {
+        type, author, text,
+        avatarUrl: avatarUrl || null,
+        timestamp: Date.now()
+      });
+    } catch(e) { console.warn('[Firebase] sendChat:', e); }
+  });
+}
+
+function listenChat(orderId, onMessage, key) {
+  // key = 'client' | 'fondation' | 'moderateur' — listener séparé par contexte
+  const k = key || 'client';
+  if (!window._chatListeners) window._chatListeners = {};
+  // Arrêter l'ancien listener du même contexte
+  if (window._chatListeners[k]) { window._chatListeners[k](); window._chatListeners[k] = null; }
+  if (!window._fb) return;
+  const { rtdb, ref, onValue } = window._fb;
+  const unsub = onValue(ref(rtdb, 'chats/' + orderId), (snapshot) => {
+    const msgs = [];
+    snapshot.forEach(child => msgs.push({ id: child.key, ...child.val() }));
+    onMessage(msgs);
+  });
+  window._chatListeners[k] = unsub;
+}
+
+function renderChatMessages(msgs, containerEl, currentPseudo) {
+  if (!containerEl) return;
+  const wasAtBottom = containerEl.scrollHeight - containerEl.scrollTop <= containerEl.clientHeight + 50;
+  containerEl.innerHTML = '';
+  msgs.forEach(m => {
+    if (m.type === 'system') {
+      const el = document.createElement('div'); el.className = 'system-msg'; el.textContent = m.text; containerEl.appendChild(el);
+    } else {
+      const isUser = m.type === 'user';
+      const el = document.createElement('div');
+      el.className = 'msg ' + (isUser ? 'msg-user' : 'msg-admin');
+      const ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      el.innerHTML = m.text.replace(/\n/g, '<br>') + '<div class="msg-meta ' + (isUser ? '' : 'msg-meta-left') + '">' + m.author + ' · ' + ts + '</div>';
+      containerEl.appendChild(el);
+    }
+  });
+  if (wasAtBottom) containerEl.scrollTop = containerEl.scrollHeight;
+}
+
+function saveOrders() {}
+function loadOrders() {}
+
+// File d'attente pour les appels Firebase avant initialisation
+window._fbQueue = window._fbQueue || [];
+function fbReady(fn) {
+  if (window._fbReady) { fn(); }
+  else { window._fbQueue.push(fn); }
+}
+
+function initFirebase() {
+  window._fbReady = true;
+  // Vider la file d'attente
+  (window._fbQueue || []).forEach(fn => { try { fn(); } catch(e) {} });
+  window._fbQueue = [];
+  subscribeOrders();
+  if (discordUser) loadMyActiveOrder();
+}
+
+if (window._fbReady) { initFirebase(); }
+else { window.addEventListener('firebase-ready', initFirebase); }
+
+// ── CLOCK ─────────────────────────────────────────────
 function updateAdminClocks() {
   const fmt = new Date().toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   const el1 = document.getElementById('fondation-time');
@@ -4208,6 +4527,16 @@ function updateAdminClocks() {
 setInterval(updateAdminClocks, 1000);
 updateAdminClocks();
 </script>
+
+<!-- BANDEAU COMMANDE ACTIVE -->
+<div class="order-status-banner" id="order-status-banner">
+  <span style="font-size:1.5rem" id="order-banner-icon">📦</span>
+  <div class="order-status-banner-info">
+    <div class="order-status-banner-id" id="order-banner-id">—</div>
+    <div class="order-status-banner-status" id="order-banner-status">En attente</div>
+  </div>
+  <button class="order-status-banner-btn" onclick="reopenMyOrder()">Voir →</button>
+</div>
 
 </body>
 </html>
